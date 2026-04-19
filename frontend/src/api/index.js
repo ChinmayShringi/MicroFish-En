@@ -1,9 +1,10 @@
 import axios from 'axios'
+import i18n from '../i18n'
 
 // Create axios instance
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001',
-  timeout: 300000, // 5-minute timeout (ontology generation may take a long time)
+  timeout: 300000, // 5-minute timeout (ontology generation may take a while)
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,6 +13,7 @@ const service = axios.create({
 // Request interceptor
 service.interceptors.request.use(
   config => {
+    config.headers['Accept-Language'] = i18n.global.locale.value
     return config
   },
   error => {
@@ -20,12 +22,12 @@ service.interceptors.request.use(
   }
 )
 
-// Response interceptor (with retry mechanism)
+// Response interceptor (fault-tolerant retry mechanism)
 service.interceptors.response.use(
   response => {
     const res = response.data
     
-    // If the returned status is not success, throw an error
+    // Throw an error if the returned status is not success
     if (!res.success && res.success !== undefined) {
       console.error('API Error:', res.error || res.message || 'Unknown error')
       return Promise.reject(new Error(res.error || res.message || 'Error'))
@@ -41,7 +43,7 @@ service.interceptors.response.use(
       console.error('Request timeout')
     }
     
-    // Handle network error
+    // Handle network errors
     if (error.message === 'Network Error') {
       console.error('Network error - please check your connection')
     }

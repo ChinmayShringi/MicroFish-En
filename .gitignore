@@ -2,7 +2,7 @@
 .DS_Store
 Thumbs.db
 
-# Environment variables (protect sensitive information)
+# Environment variables (protect sensitive info)
 .env
 .env.local
 .env.*.local
@@ -36,7 +36,7 @@ yarn-error.log*
 *.swp
 *.swo
 
-# Testing
+# Tests
 .pytest_cache/
 .coverage
 htmlcov/
@@ -45,7 +45,7 @@ htmlcov/
 .cursor/
 .claude/
 
-# Documentation and test programs
+# Docs and test programs
 mydoc/
 mytest/
 

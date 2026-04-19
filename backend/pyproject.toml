@@ -1,7 +1,7 @@
 [project]
 name = "mirofish-backend"
 version = "0.1.0"
-description = "MiroFish - A concise and universal swarm intelligence engine for predicting everything"
+description = "MiroFish - A simple and general-purpose collective intelligence engine that predicts everything"
 requires-python = ">=3.11"
 license = { text = "AGPL-3.0" }
 authors = [
@@ -9,11 +9,11 @@ authors = [
 ]
 
 dependencies = [
-    # Core framework
+    # Core frameworks
     "flask>=3.0.0",
     "flask-cors>=6.0.0",
 
-    # LLM related
+    # LLM-related
     "openai>=1.0.0",
 
     # Zep Cloud
@@ -25,11 +25,11 @@ dependencies = [
 
     # File processing
     "PyMuPDF>=1.24.0",
-    # Encoding detection (supports non-UTF-8 encoded text files)
+    # Encoding detection (supports non-UTF-8 text files)
     "charset-normalizer>=3.0.0",
     "chardet>=5.0.0",
 
-    # Utilities
+    # Utility libraries
     "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
 ]

@@ -1,6 +1,6 @@
 """
-Action Logger
-Records each agent's actions in OASIS simulations for backend monitoring.
+Action logger
+Records each agent's actions during an OASIS simulation, for backend monitoring use
 
 Log structure:
     sim_xxx/
@@ -21,11 +21,11 @@ from typing import Dict, Any, Optional
 
 class PlatformActionLogger:
     """Single-platform action logger"""
-
+    
     def __init__(self, platform: str, base_dir: str):
         """
-        Initialize logger.
-
+        Initialize the logger
+        
         Args:
             platform: Platform name (twitter/reddit)
             base_dir: Base path of the simulation directory
@@ -37,7 +37,7 @@ class PlatformActionLogger:
         self._ensure_dir()
     
     def _ensure_dir(self):
-        """Ensure directory exists"""
+        """Ensure the directory exists"""
         os.makedirs(self.log_dir, exist_ok=True)
     
     def log_action(
@@ -66,7 +66,7 @@ class PlatformActionLogger:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
     def log_round_start(self, round_num: int, simulated_hour: int):
-        """Log round start"""
+        """Log the start of a round"""
         entry = {
             "round": round_num,
             "timestamp": datetime.now().isoformat(),
@@ -78,7 +78,7 @@ class PlatformActionLogger:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
     def log_round_end(self, round_num: int, actions_count: int):
-        """Log round end"""
+        """Log the end of a round"""
         entry = {
             "round": round_num,
             "timestamp": datetime.now().isoformat(),
@@ -90,7 +90,7 @@ class PlatformActionLogger:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
     def log_simulation_start(self, config: Dict[str, Any]):
-        """Log simulation start"""
+        """Log the start of a simulation"""
         entry = {
             "timestamp": datetime.now().isoformat(),
             "event_type": "simulation_start",
@@ -103,7 +103,7 @@ class PlatformActionLogger:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     
     def log_simulation_end(self, total_rounds: int, total_actions: int):
-        """Log simulation end"""
+        """Log the end of a simulation"""
         entry = {
             "timestamp": datetime.now().isoformat(),
             "event_type": "simulation_end",
@@ -118,14 +118,14 @@ class PlatformActionLogger:
 
 class SimulationLogManager:
     """
-    Simulation Log Manager
-    Unified management of all log files, separated by platform.
+    Simulation log manager
+    Unified management of all log files, separated by platform
     """
-
+    
     def __init__(self, simulation_dir: str):
         """
-        Initialize log manager.
-
+        Initialize the log manager
+        
         Args:
             simulation_dir: Simulation directory path
         """
@@ -136,9 +136,9 @@ class SimulationLogManager:
         
         # Set up main logger
         self._setup_main_logger()
-
+    
     def _setup_main_logger(self):
-        """Set up main simulation logger"""
+        """Set up the main simulation logger"""
         log_path = os.path.join(self.simulation_dir, "simulation.log")
         
         # Create logger
@@ -167,19 +167,19 @@ class SimulationLogManager:
         self._main_logger.propagate = False
     
     def get_twitter_logger(self) -> PlatformActionLogger:
-        """Get Twitter platform action logger"""
+        """Get the Twitter platform action logger"""
         if self.twitter_logger is None:
             self.twitter_logger = PlatformActionLogger("twitter", self.simulation_dir)
         return self.twitter_logger
     
     def get_reddit_logger(self) -> PlatformActionLogger:
-        """Get Reddit platform action logger"""
+        """Get the Reddit platform action logger"""
         if self.reddit_logger is None:
             self.reddit_logger = PlatformActionLogger("reddit", self.simulation_dir)
         return self.reddit_logger
     
     def log(self, message: str, level: str = "info"):
-        """Log to main logger"""
+        """Write to the main log"""
         if self._main_logger:
             getattr(self._main_logger, level.lower(), self._main_logger.info)(message)
     
@@ -196,12 +196,12 @@ class SimulationLogManager:
         self.log(message, "debug")
 
 
-# ============ Legacy Interface Compatibility ============
+# ============ Legacy interface compatibility ============
 
 class ActionLogger:
     """
-    Action logger (legacy interface compatibility).
-    Recommended to use SimulationLogManager instead.
+    Action logger (legacy interface compatibility)
+    It is recommended to use SimulationLogManager instead
     """
     
     def __init__(self, log_path: str):
@@ -293,7 +293,7 @@ _global_logger: Optional[ActionLogger] = None
 
 
 def get_logger(log_path: Optional[str] = None) -> ActionLogger:
-    """Get global logger instance (legacy interface compatibility)"""
+    """Get the global logger instance (legacy interface compatibility)"""
     global _global_logger
     
     if log_path:

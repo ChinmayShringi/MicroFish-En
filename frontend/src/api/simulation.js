@@ -33,7 +33,7 @@ export const getSimulation = (simulationId) => {
 }
 
 /**
- * Get simulation Agent Profiles
+ * Get simulation's Agent Profiles
  * @param {string} simulationId
  * @param {string} platform - 'reddit' | 'twitter'
  */
@@ -42,7 +42,7 @@ export const getSimulationProfiles = (simulationId, platform = 'reddit') => {
 }
 
 /**
- * Get real-time Agent Profiles being generated
+ * Get Agent Profiles currently being generated in real-time
  * @param {string} simulationId
  * @param {string} platform - 'reddit' | 'twitter'
  */
@@ -59,9 +59,9 @@ export const getSimulationConfig = (simulationId) => {
 }
 
 /**
- * Get real-time simulation configuration being generated
+ * Get simulation config currently being generated in real-time
  * @param {string} simulationId
- * @returns {Promise} Returns configuration info, including metadata and configuration content
+ * @returns {Promise} Returns config info including metadata and configuration content
  */
 export const getSimulationConfigRealtime = (simulationId) => {
   return service.get(`/api/simulation/${simulationId}/config/realtime`)
@@ -69,7 +69,7 @@ export const getSimulationConfigRealtime = (simulationId) => {
 
 /**
  * List all simulations
- * @param {string} projectId - Optional, filter by project ID
+ * @param {string} projectId - optional, filter by project ID
  */
 export const listSimulations = (projectId) => {
   const params = projectId ? { project_id: projectId } : {}
@@ -93,7 +93,7 @@ export const stopSimulation = (data) => {
 }
 
 /**
- * Get simulation real-time run status
+ * Get real-time simulation run status
  * @param {string} simulationId
  */
 export const getRunStatus = (simulationId) => {
@@ -101,7 +101,7 @@ export const getRunStatus = (simulationId) => {
 }
 
 /**
- * Get simulation detailed run status (including recent actions)
+ * Get detailed simulation run status (including recent actions)
  * @param {string} simulationId
  */
 export const getRunStatusDetail = (simulationId) => {
@@ -109,11 +109,11 @@ export const getRunStatusDetail = (simulationId) => {
 }
 
 /**
- * Get simulation posts
+ * Get posts within the simulation
  * @param {string} simulationId
  * @param {string} platform - 'reddit' | 'twitter'
- * @param {number} limit - Number of results
- * @param {number} offset - Offset
+ * @param {number} limit - number of records to return
+ * @param {number} offset - offset
  */
 export const getSimulationPosts = (simulationId, platform = 'reddit', limit = 50, offset = 0) => {
   return service.get(`/api/simulation/${simulationId}/posts`, {
@@ -124,8 +124,8 @@ export const getSimulationPosts = (simulationId, platform = 'reddit', limit = 50
 /**
  * Get simulation timeline (aggregated by round)
  * @param {string} simulationId
- * @param {number} startRound - Start round
- * @param {number} endRound - End round
+ * @param {number} startRound - starting round
+ * @param {number} endRound - ending round
  */
 export const getSimulationTimeline = (simulationId, startRound = 0, endRound = null) => {
   const params = { start_round: startRound }
@@ -178,8 +178,8 @@ export const interviewAgents = (data) => {
 
 /**
  * Get historical simulation list (with project details)
- * Used for homepage history display
- * @param {number} limit - Result limit
+ * Used for displaying historical projects on the home page
+ * @param {number} limit - max number of results
  */
 export const getSimulationHistory = (limit = 20) => {
   return service.get('/api/simulation/history', { params: { limit } })

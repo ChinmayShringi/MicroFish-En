@@ -1,6 +1,7 @@
 /**
- * Temporary storage for files and requirements pending upload
- * Used for immediate navigation after clicking start engine on homepage; API calls happen on the Process page
+ * Temporarily stores files and requirement awaiting upload.
+ * Used so that clicking "start engine" on the home page can jump immediately
+ * and the API call is performed on the Process page.
  */
 import { reactive } from 'vue'
 

@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
           <span class="step-num">Step 5/5</span>
-          <span class="step-name">Deep Interaction</span>
+          <span class="step-name">{{ $tm('main.stepNames')[4] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -64,21 +66,24 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step5Interaction from '../components/Step5Interaction.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation } from '../api/simulation'
 import { getReport } from '../api/report'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // Props
 const props = defineProps({
   reportId: String
 })
 
-// Layout State - default to workbench view
+// Layout State - defaults to the workbench view
 const viewMode = ref('workbench')
 
 // Data State
@@ -140,28 +145,28 @@ const toggleMaximize = (target) => {
 // --- Data Logic ---
 const loadReportData = async () => {
   try {
-    addLog(`Loading report data: ${currentReportId.value}`)
-    
-    // Get report info to obtain simulation_id
+    addLog(t('log.loadReportData', { id: currentReportId.value }))
+
+    // Fetch report info to get simulation_id
     const reportRes = await getReport(currentReportId.value)
     if (reportRes.success && reportRes.data) {
       const reportData = reportRes.data
       simulationId.value = reportData.simulation_id
-      
+
       if (simulationId.value) {
-        // Get simulation info
+        // Fetch simulation info
         const simRes = await getSimulation(simulationId.value)
         if (simRes.success && simRes.data) {
           const simData = simRes.data
-          
-          // Get project info
+
+          // Fetch project info
           if (simData.project_id) {
             const projRes = await getProject(simData.project_id)
             if (projRes.success && projRes.data) {
               projectData.value = projRes.data
-              addLog(`Project loaded: ${projRes.data.project_id}`)
-              
-              // Get graph data
+              addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
+
+              // Fetch graph data
               if (projRes.data.graph_id) {
                 await loadGraph(projRes.data.graph_id)
               }
@@ -170,10 +175,10 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`Failed to get report info: ${reportRes.error || 'Unknown error'}`)
+      addLog(t('log.getReportInfoFailed', { error: reportRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Loading error: ${err.message}`)
+    addLog(t('log.loadException', { error: err.message }))
   }
 }
 
@@ -184,10 +189,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('Graph data loaded successfully')
+      addLog(t('log.graphDataLoadSuccess'))
     }
   } catch (err) {
-    addLog(`Graph loading failed: ${err.message}`)
+    addLog(t('log.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -208,7 +213,7 @@ watch(() => route.params.reportId, (newId) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('InteractionView initialized')
+  addLog(t('log.interactionViewInit'))
   loadReportData()
 })
 </script>

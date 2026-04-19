@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-// Using Vue Router to manage pages
+// Uses Vue Router to manage pages
 </script>
 
 <style>
@@ -22,7 +22,7 @@
   background-color: #ffffff;
 }
 
-/* Scrollbar styles */
+/* Scrollbar style */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -40,7 +40,7 @@
   background: #333333;
 }
 
-/* Global button styles */
+/* Global button style */
 button {
   font-family: inherit;
 }

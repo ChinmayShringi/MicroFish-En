@@ -1,12 +1,12 @@
 import service, { requestWithRetry } from './index'
 
 /**
- * Generate ontology (upload documents and simulation requirements)
- * @param {Object} data - Contains files, simulation_requirement, project_name, etc.
+ * Generate ontology (upload documents and simulation requirement)
+ * @param {Object} data - contains files, simulation_requirement, project_name, etc.
  * @returns {Promise}
  */
 export function generateOntology(formData) {
-  return requestWithRetry(() => 
+  return requestWithRetry(() =>
     service({
       url: '/api/graph/ontology/generate',
       method: 'post',
@@ -19,8 +19,8 @@ export function generateOntology(formData) {
 }
 
 /**
- * Build knowledge graph
- * @param {Object} data - Contains project_id, graph_name, etc.
+ * Build graph
+ * @param {Object} data - contains project_id, graph_name, etc.
  * @returns {Promise}
  */
 export function buildGraph(data) {
@@ -35,7 +35,7 @@ export function buildGraph(data) {
 
 /**
  * Query task status
- * @param {String} taskId - Task ID
+ * @param {String} taskId - task ID
  * @returns {Promise}
  */
 export function getTaskStatus(taskId) {
@@ -47,7 +47,7 @@ export function getTaskStatus(taskId) {
 
 /**
  * Get graph data
- * @param {String} graphId - Graph ID
+ * @param {String} graphId - graph ID
  * @returns {Promise}
  */
 export function getGraphData(graphId) {
@@ -59,7 +59,7 @@ export function getGraphData(graphId) {
 
 /**
  * Get project information
- * @param {String} projectId - Project ID
+ * @param {String} projectId - project ID
  * @returns {Promise}
  */
 export function getProject(projectId) {

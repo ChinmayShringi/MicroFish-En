@@ -1,8 +1,8 @@
 services:
   mirofish:
-    image: ghcr.io/ChinmayShringi/MicroFish-En:latest
-    # Mirror image (replace above if pulling is slow)
-    # image: ghcr.nju.edu.cn/ChinmayShringi/MicroFish-En:latest
+    image: ghcr.io/666ghj/mirofish:latest
+    # Mirror image (replace the address above if upstream pulls are slow)
+    # image: ghcr.nju.edu.cn/666ghj/mirofish:latest
     container_name: mirofish
     env_file:
       - .env

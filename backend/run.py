@@ -1,13 +1,13 @@
 """
-MiroFish Backend Entry Point
+MiroFish Backend startup entry point
 """
 
 import os
 import sys
 
-# Fix Windows console encoding issues: set UTF-8 encoding before all imports
+# Fix Windows console encoding issues with non-ASCII text: set UTF-8 before any imports
 if sys.platform == 'win32':
-    # Set environment variables to ensure Python uses UTF-8
+    # Set environment variable to ensure Python uses UTF-8
     os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
     # Reconfigure standard output streams to UTF-8
     if hasattr(sys.stdout, 'reconfigure'):
@@ -32,15 +32,15 @@ def main():
             print(f"  - {err}")
         print("\nPlease check the configuration in the .env file")
         sys.exit(1)
-    
-    # Create application
+
+    # Create app
     app = create_app()
-    
+
     # Get runtime configuration
     host = os.environ.get('FLASK_HOST', '0.0.0.0')
     port = int(os.environ.get('FLASK_PORT', 5001))
     debug = Config.DEBUG
-    
+
     # Start service
     app.run(host=host, port=port, debug=debug, threaded=True)
 

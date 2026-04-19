@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
           <span class="step-num">Step 2/5</span>
-          <span class="step-name">Environment Setup</span>
+          <span class="step-name">{{ $tm('main.stepNames')[1] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -70,7 +72,10 @@ import GraphPanel from '../components/GraphPanel.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation, stopSimulation, getEnvStatus, closeSimulationEnv } from '../api/simulation'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -137,7 +142,7 @@ const toggleMaximize = (target) => {
 }
 
 const handleGoBack = () => {
-  // Return to process page
+  // Return to the process page
   if (projectData.value?.project_id) {
     router.push({ name: 'Process', params: { projectId: projectData.value.project_id } })
   } else {
@@ -146,47 +151,47 @@ const handleGoBack = () => {
 }
 
 const handleNextStep = (params = {}) => {
-  addLog('Entering Step 3: Run Simulation')
-  
-  // Log simulation round config
+  addLog(t('log.enterStep3'))
+
+  // Record the simulation-rounds configuration
   if (params.maxRounds) {
-    addLog(`Custom simulation rounds: ${params.maxRounds}`)
+    addLog(t('log.customRoundsConfig', { rounds: params.maxRounds }))
   } else {
-    addLog('Using auto-configured simulation rounds')
+    addLog(t('log.useAutoRounds'))
   }
   
-  // Build route params
+  // Build route parameters
   const routeParams = {
     name: 'SimulationRun',
     params: { simulationId: currentSimulationId.value }
   }
   
-  // Pass custom rounds via query params
+  // If a custom round count is supplied, pass it via the query param
   if (params.maxRounds) {
     routeParams.query = { maxRounds: params.maxRounds }
   }
   
-  // Navigate to Step 3 page
+  // Navigate to the Step 3 page
   router.push(routeParams)
 }
 
 // --- Data Logic ---
 
 /**
- * Check and close running simulation
- * When user returns from Step 3 to Step 2, assume they want to exit simulation
+ * Check and close any running simulation.
+ * When the user returns from Step 3 to Step 2, assume they want to exit the simulation.
  */
 const checkAndStopRunningSimulation = async () => {
   if (!currentSimulationId.value) return
   
   try {
-    // First check if simulation environment is alive
+    // First check whether the simulation environment is alive
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
     
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
-      addLog('Detected running simulation environment, shutting down...')
+      addLog(t('log.detectedSimEnvRunning'))
       
-      // Try graceful shutdown of simulation environment
+      // Attempt to gracefully close the simulation environment
       try {
         const closeRes = await closeSimulationEnv({ 
           simulation_id: currentSimulationId.value,
@@ -194,74 +199,74 @@ const checkAndStopRunningSimulation = async () => {
         })
         
         if (closeRes.success) {
-          addLog('✓ Simulation environment closed')
+          addLog(t('log.simEnvClosed'))
         } else {
-          addLog(`Failed to close simulation environment: ${closeRes.error || 'Unknown error'}`)
-          // If graceful close fails, try force stop
+          addLog(t('log.closeSimEnvFailedWithError', { error: closeRes.error || t('common.unknownError') }))
+          // If graceful close fails, try to force stop
           await forceStopSimulation()
         }
       } catch (closeErr) {
-        addLog(`Simulation environment close error: ${closeErr.message}`)
-        // If graceful close throws, try force stop
+        addLog(t('log.closeSimEnvException', { error: closeErr.message }))
+        // If graceful close raises an exception, try to force stop
         await forceStopSimulation()
       }
     } else {
-      // Environment not running, but process may still exist, check simulation status
+      // Environment is not running but the process might still be alive; check simulation status
       const simRes = await getSimulation(currentSimulationId.value)
       if (simRes.success && simRes.data?.status === 'running') {
-        addLog('Detected simulation in running state, stopping...')
+        addLog(t('log.detectedSimRunning'))
         await forceStopSimulation()
       }
     }
   } catch (err) {
-    // Environment status check failure does not affect subsequent flow
+    // Failing to check environment status does not block subsequent flow
     console.warn('Failed to check simulation status:', err)
   }
 }
 
 /**
- * Force stop simulation
+ * Force stop the simulation.
  */
 const forceStopSimulation = async () => {
   try {
     const stopRes = await stopSimulation({ simulation_id: currentSimulationId.value })
     if (stopRes.success) {
-      addLog('✓ Simulation force stopped')
+      addLog(t('log.simForceStopSuccess'))
     } else {
-      addLog(`Failed to force stop simulation: ${stopRes.error || 'Unknown error'}`)
+      addLog(t('log.forceStopSimFailed', { error: stopRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Force stop simulation error: ${err.message}`)
+    addLog(t('log.forceStopSimException', { error: err.message }))
   }
 }
 
 const loadSimulationData = async () => {
   try {
-    addLog(`Loading simulation data: ${currentSimulationId.value}`)
-    
-    // Get simulation info
+    addLog(t('log.loadingSimData', { id: currentSimulationId.value }))
+
+    // Fetch simulation info
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
-      
-      // Get project info
+
+      // Fetch project info
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
-          addLog(`Project loaded: ${projRes.data.project_id}`)
+          addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
           
-          // Get graph data
+          // Fetch graph data
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
           }
         }
       }
     } else {
-      addLog(`Failed to load simulation data: ${simRes.error || 'Unknown error'}`)
+      addLog(t('log.loadSimDataFailed', { error: simRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Loading error: ${err.message}`)
+    addLog(t('log.loadException', { error: err.message }))
   }
 }
 
@@ -271,10 +276,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('Graph data loaded successfully')
+      addLog(t('log.graphDataLoadSuccess'))
     }
   } catch (err) {
-    addLog(`Graph loading failed: ${err.message}`)
+    addLog(t('log.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -287,9 +292,9 @@ const refreshGraph = () => {
 }
 
 onMounted(async () => {
-  addLog('SimulationView initialized')
+  addLog(t('log.simViewInit'))
   
-  // Check and close running simulation (when user returns from Step 3)
+  // Check and close any running simulation (when user returns from Step 3)
   await checkAndStopRunningSimulation()
   
   // Load simulation data

@@ -5,29 +5,29 @@
 # Install: pip install -r requirements.txt
 # ===========================================
 
-# ============= Core Framework =============
+# ============= Core frameworks =============
 flask>=3.0.0
 flask-cors>=6.0.0
 
-# ============= LLM Related =============
-# OpenAI SDK (unified LLM calls using OpenAI format)
+# ============= LLM-related =============
+# OpenAI SDK (uses OpenAI-compatible format for LLM calls)
 openai>=1.0.0
 
 # ============= Zep Cloud =============
 zep-cloud==3.13.0
 
-# ============= OASIS Social Media Simulation =============
+# ============= OASIS social media simulation =============
 # OASIS social simulation framework
 camel-oasis==0.2.5
 camel-ai==0.2.78
 
-# ============= File Processing =============
+# ============= File processing =============
 PyMuPDF>=1.24.0
-# Encoding detection (supports non-UTF-8 encoded text files)
+# Encoding detection (supports non-UTF-8 text files)
 charset-normalizer>=3.0.0
 chardet>=5.0.0
 
-# ============= Utility Libraries =============
+# ============= Utility libraries =============
 # Environment variable loading
 python-dotenv>=1.0.0
 

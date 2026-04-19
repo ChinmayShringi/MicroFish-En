@@ -1,7 +1,7 @@
 {
   "name": "mirofish",
   "version": "0.1.0",
-  "description": "MiroFish - A Simple and Universal Swarm Intelligence Engine, Predicting Anything",
+  "description": "MiroFish - a simple, general-purpose collective intelligence engine for predicting anything",
   "scripts": {
     "setup": "npm install && cd frontend && npm install",
     "setup:backend": "cd backend && uv sync",

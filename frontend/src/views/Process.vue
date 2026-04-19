@@ -3,11 +3,11 @@
     <!-- Top navigation bar -->
     <nav class="navbar">
       <div class="nav-brand" @click="goHome">MIROFISH</div>
-      
+
       <!-- Center step indicator -->
       <div class="nav-center">
         <div class="step-badge">STEP 01</div>
-        <div class="step-name">Graph Building</div>
+        <div class="step-name">Graph Build</div>
       </div>
 
       <div class="nav-status">
@@ -18,7 +18,7 @@
 
     <!-- Main content area -->
     <div class="main-content">
-      <!-- Left: Real-time graph display -->
+      <!-- Left: real-time graph view -->
       <div class="left-panel" :class="{ 'full-screen': isFullScreen }">
         <div class="panel-header">
           <div class="header-left">
@@ -29,14 +29,14 @@
             <template v-if="graphData">
               <span class="stat-item">{{ graphData.node_count || graphData.nodes?.length || 0 }} Nodes</span>
               <span class="stat-divider">|</span>
-              <span class="stat-item">{{ graphData.edge_count || graphData.edges?.length || 0 }} Relations</span>
+              <span class="stat-item">{{ graphData.edge_count || graphData.edges?.length || 0 }} Edges</span>
               <span class="stat-divider">|</span>
             </template>
             <div class="action-buttons">
-                <button class="action-btn" @click="refreshGraph" :disabled="graphLoading" title="Refresh Graph">
+                <button class="action-btn" @click="refreshGraph" :disabled="graphLoading" title="Refresh graph">
                   <span class="icon-refresh" :class="{ 'spinning': graphLoading }">↻</span>
                 </button>
-                <button class="action-btn" @click="toggleFullScreen" :title="isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'">
+                <button class="action-btn" @click="toggleFullScreen" :title="isFullScreen ? 'Exit fullscreen' : 'Fullscreen'">
                   <span class="icon-fullscreen">{{ isFullScreen ? '↙' : '↗' }}</span>
                 </button>
             </div>
@@ -44,16 +44,16 @@
         </div>
         
         <div class="graph-container" ref="graphContainer">
-          <!-- Graph visualization (show when data exists) -->
+          <!-- Graph visualization (shown as soon as data is available) -->
           <div v-if="graphData" class="graph-view">
             <svg ref="graphSvg" class="graph-svg"></svg>
             <!-- Building hint -->
             <div v-if="currentPhase === 1" class="graph-building-hint">
               <span class="building-dot"></span>
-              Updating in real-time...
+              Updating in real time...
             </div>
-            
-            <!-- Node/Edge detail panel -->
+
+            <!-- Node/edge detail panel -->
             <div v-if="selectedItem" class="detail-panel">
               <div class="detail-panel-header">
                 <span class="detail-title">{{ selectedItem.type === 'node' ? 'Node Details' : 'Relationship' }}</span>
@@ -173,8 +173,8 @@
             </div>
             <p class="loading-text">Loading graph data...</p>
           </div>
-          
-          <!-- Waiting for build -->
+
+          <!-- Waiting to build -->
           <div v-else-if="currentPhase < 1" class="graph-waiting">
             <div class="waiting-icon">
               <svg viewBox="0 0 100 100" class="network-icon">
@@ -189,10 +189,10 @@
                 <line x1="50" y1="72" x2="74" y2="66" stroke="#000" stroke-width="1"/>
               </svg>
             </div>
-            <p class="waiting-text">Waiting for Ontology Generation</p>
-            <p class="waiting-hint">Graph construction will start automatically after generation</p>
+            <p class="waiting-text">Waiting for ontology generation</p>
+            <p class="waiting-hint">Graph construction will start automatically once generation completes</p>
           </div>
-          
+
           <!-- Building but no data yet -->
           <div v-else-if="currentPhase === 1 && !graphData" class="graph-waiting">
             <div class="loading-animation">
@@ -200,10 +200,10 @@
               <div class="loading-ring"></div>
               <div class="loading-ring"></div>
             </div>
-            <p class="waiting-text">Building Graph</p>
+            <p class="waiting-text">Building graph</p>
             <p class="waiting-hint">Data will appear shortly...</p>
           </div>
-          
+
           <!-- Error state -->
           <div v-else-if="error" class="graph-error">
             <span class="error-icon">⚠</span>
@@ -221,7 +221,7 @@
         </div>
       </div>
 
-      <!-- Right: Build process details -->
+      <!-- Right: build process details -->
       <div class="right-panel" :class="{ 'hidden': isFullScreen }">
         <div class="panel-header dark-header">
           <span class="header-icon">▣</span>
@@ -229,7 +229,7 @@
         </div>
 
         <div class="process-content">
-          <!-- Phase 1: Ontology Generation -->
+          <!-- Phase 1: Ontology generation -->
           <div class="process-phase" :class="{ 'active': currentPhase === 0, 'completed': currentPhase > 0 }">
             <div class="phase-header">
               <span class="phase-num">01</span>
@@ -244,12 +244,12 @@
             
             <div class="phase-detail">
               <div class="detail-section">
-                <div class="detail-label">API Description</div>
+                <div class="detail-label">Endpoint Overview</div>
                 <div class="detail-content">
-                  After uploading documents, LLM analyzes content and auto-generates ontology structure suitable for opinion simulation (entity types + relation types)
+                  After documents are uploaded, the LLM analyzes their content and automatically generates an ontology structure suited for public-opinion simulation (entity types + relation types)
                 </div>
               </div>
-              
+
               <!-- Ontology generation progress -->
               <div class="detail-section" v-if="ontologyProgress && currentPhase === 0">
                 <div class="detail-label">Generation Progress</div>
@@ -300,12 +300,12 @@
             </div>
           </div>
 
-          <!-- Phase 2: Graph Building -->
+          <!-- Phase 2: Graph build -->
           <div class="process-phase" :class="{ 'active': currentPhase === 1, 'completed': currentPhase > 1 }">
             <div class="phase-header">
               <span class="phase-num">02</span>
               <div class="phase-info">
-                <div class="phase-title">Graph Building</div>
+                <div class="phase-title">Graph Build</div>
                 <div class="phase-api">/api/graph/build</div>
               </div>
               <span class="phase-status" :class="getPhaseStatusClass(1)">
@@ -315,17 +315,17 @@
             
             <div class="phase-detail">
               <div class="detail-section">
-                <div class="detail-label">API Description</div>
+                <div class="detail-label">Endpoint Overview</div>
                 <div class="detail-content">
-                  Based on the generated ontology, chunk documents and call Zep API to build knowledge graph, extracting entities and relationships
+                  Using the generated ontology, chunk the documents and call the Zep API to build the knowledge graph, extracting entities and relationships
                 </div>
               </div>
-              
-              <!-- Waiting for ontology completion -->
+
+              <!-- Waiting for ontology to finish -->
               <div class="detail-section waiting-state" v-if="currentPhase < 1">
                 <div class="waiting-hint">Waiting for ontology generation to complete...</div>
               </div>
-              
+
               <!-- Build progress -->
               <div class="detail-section" v-if="buildProgress && currentPhase >= 1">
                 <div class="detail-label">Build Progress</div>
@@ -339,7 +339,7 @@
               </div>
               
               <div class="detail-section" v-if="graphData">
-                <div class="detail-label">Build Results</div>
+                <div class="detail-label">Build Result</div>
                 <div class="build-result">
                   <div class="result-item">
                     <span class="result-value">{{ graphData.node_count }}</span>
@@ -358,13 +358,13 @@
             </div>
           </div>
 
-          <!-- Phase 3: Complete -->
+          <!-- Phase 3: Completed -->
           <div class="process-phase" :class="{ 'active': currentPhase === 2, 'completed': currentPhase > 2 }">
             <div class="phase-header">
               <span class="phase-num">03</span>
               <div class="phase-info">
                 <div class="phase-title">Build Complete</div>
-                <div class="phase-api">Ready for the next step</div>
+                <div class="phase-api">Ready to proceed to the next step</div>
               </div>
               <span class="phase-status" :class="getPhaseStatusClass(2)">
                 {{ getPhaseStatusText(2) }}
@@ -375,7 +375,7 @@
           <!-- Next step button -->
           <div class="next-step-section" v-if="currentPhase >= 2">
             <button class="next-step-btn" @click="goToNextStep" :disabled="currentPhase < 2">
-              Enter Environment Setup
+              Proceed to Environment Setup
               <span class="btn-arrow">→</span>
             </button>
           </div>
@@ -421,7 +421,7 @@ import * as d3 from 'd3'
 const route = useRoute()
 const router = useRouter()
 
-// Current project ID (may change from 'new' to actual ID)
+// Current project ID (may change from 'new' to an actual ID)
 const currentProjectId = ref(route.params.projectId)
 
 // State
@@ -432,7 +432,7 @@ const projectData = ref(null)
 const graphData = ref(null)
 const buildProgress = ref(null)
 const ontologyProgress = ref(null) // Ontology generation progress
-const currentPhase = ref(-1) // -1: Uploading, 0: Generating ontology, 1: Building graph, 2: Complete
+const currentPhase = ref(-1) // -1: uploading, 0: generating ontology, 1: building graph, 2: completed
 const selectedItem = ref(null) // Selected node or edge
 const isFullScreen = ref(false)
 
@@ -440,7 +440,7 @@ const isFullScreen = ref(false)
 const graphContainer = ref(null)
 const graphSvg = ref(null)
 
-// Polling timers
+// Polling timer
 let pollTimer = null
 
 // Computed properties
@@ -451,10 +451,10 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Build Failed'
-  if (currentPhase.value >= 2) return 'Build Complete'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Generating Ontology'
+  if (error.value) return 'Build failed'
+  if (currentPhase.value >= 2) return 'Build complete'
+  if (currentPhase.value === 1) return 'Building graph'
+  if (currentPhase.value === 0) return 'Generating ontology'
   return 'Initializing'
 })
 
@@ -481,8 +481,8 @@ const goHome = () => {
 }
 
 const goToNextStep = () => {
-  // TODO: Enter Environment Setup step
-  alert('Environment setup feature under development...')
+  // TODO: proceed to environment setup step
+  alert('Environment setup feature is under development...')
 }
 
 const toggleFullScreen = () => {
@@ -493,7 +493,7 @@ const toggleFullScreen = () => {
   }, 350) 
 }
 
-// Close detail panel
+// Close the detail panel
 const closeDetailPanel = () => {
   selectedItem.value = null
 }
@@ -503,7 +503,7 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -515,7 +515,7 @@ const formatDate = (dateStr) => {
   }
 }
 
-// Select node
+// Select a node
 const selectNode = (nodeData, color) => {
   selectedItem.value = {
     type: 'node',
@@ -525,7 +525,7 @@ const selectNode = (nodeData, color) => {
   }
 }
 
-// Select edge
+// Select an edge
 const selectEdge = (edgeData) => {
   selectedItem.value = {
     type: 'edge',
@@ -545,17 +545,17 @@ const getPhaseStatusText = (phase) => {
     if (phase === 1 && buildProgress.value) {
       return `${buildProgress.value.progress}%`
     }
-    return 'In Progress'
+    return 'In progress'
   }
   return 'Pending'
 }
 
-// Initialize - handle new project or load existing project
+// Initialize - either handle a new project or load an existing one
 const initProject = async () => {
   const paramProjectId = route.params.projectId
-  
+
   if (paramProjectId === 'new') {
-    // New project: get pending upload data from store
+    // New project: pull pending upload data from the store
     await handleNewProject()
   } else {
     // Load existing project
@@ -564,21 +564,21 @@ const initProject = async () => {
   }
 }
 
-// Handle new project - call ontology/generate API
+// Handle a new project - calls the ontology/generate API
 const handleNewProject = async () => {
   const pending = getPendingUpload()
   
   if (!pending.isPending || pending.files.length === 0) {
-    error.value = 'No files pending upload. Please return to the homepage and try again.'
+    error.value = 'No pending files to upload. Please return to the home page and try again.'
     loading.value = false
     return
   }
   
   try {
     loading.value = true
-    currentPhase.value = 0 // Ontology generation phase
+    currentPhase.value = 0 // Ontology-generation phase
     ontologyProgress.value = { message: 'Uploading files and analyzing documents...' }
-    
+
     // Build FormData
     const formDataObj = new FormData()
     pending.files.forEach(file => {
@@ -586,18 +586,18 @@ const handleNewProject = async () => {
     })
     formDataObj.append('simulation_requirement', pending.simulationRequirement)
     
-    // Call ontology generation API
+    // Call the ontology-generation API
     const response = await generateOntology(formDataObj)
-    
+
     if (response.success) {
-      // Clear pending upload data
+      // Clear pending-upload data
       clearPendingUpload()
-      
+
       // Update project ID and data
       currentProjectId.value = response.data.project_id
       projectData.value = response.data
-      
-      // Update URL (no page refresh)
+
+      // Update the URL (without reloading the page)
       router.replace({
         name: 'Process',
         params: { projectId: response.data.project_id }
@@ -605,7 +605,7 @@ const handleNewProject = async () => {
       
       ontologyProgress.value = null
       
-      // Auto-start graph building
+      // Automatically start building the graph
       await startBuildGraph()
     } else {
       error.value = response.error || 'Ontology generation failed'
@@ -628,18 +628,18 @@ const loadProject = async () => {
       projectData.value = response.data
       updatePhaseByStatus(response.data.status)
       
-      // Auto-start graph building
+      // Automatically start building the graph
       if (response.data.status === 'ontology_generated' && !response.data.graph_id) {
         await startBuildGraph()
       }
-      
-      // Continue polling building task
+
+      // Continue polling an in-progress build task
       if (response.data.status === 'graph_building' && response.data.graph_build_task_id) {
         currentPhase.value = 1
         startPollingTask(response.data.graph_build_task_id)
       }
-      
-      // Load completed graph
+
+      // Load a completed graph
       if (response.data.status === 'graph_completed' && response.data.graph_id) {
         currentPhase.value = 2
         await loadGraph(response.data.graph_id)
@@ -673,62 +673,62 @@ const updatePhaseByStatus = (status) => {
   }
 }
 
-// Start building graph
+// Start building the graph
 const startBuildGraph = async () => {
   try {
     currentPhase.value = 1
     // Set initial progress
     buildProgress.value = {
       progress: 0,
-      message: 'Starting graph construction...'
+      message: 'Starting graph build...'
     }
-    
+
     const response = await buildGraph({ project_id: currentProjectId.value })
-    
+
     if (response.success) {
-      buildProgress.value.message = 'Graph build task started...'
-      
+      buildProgress.value.message = 'Graph-build task started...'
+
       // Save task_id for polling
       const taskId = response.data.task_id
-      
-      // Start graph data polling (independent of task status polling)
+
+      // Start graph-data polling (independent of task-status polling)
       startGraphPolling()
-      
-      // Start task status polling
+
+      // Start task-status polling
       startPollingTask(taskId)
     } else {
-      error.value = response.error || 'Failed to start graph construction'
+      error.value = response.error || 'Failed to start graph build'
       buildProgress.value = null
     }
   } catch (err) {
     console.error('Build graph error:', err)
-    error.value = 'Failed to start graph construction: ' + (err.message || 'Unknown error')
+    error.value = 'Failed to start graph build: ' + (err.message || 'Unknown error')
     buildProgress.value = null
   }
 }
 
-// Graph data polling timer
+// Graph-data polling timer
 let graphPollTimer = null
 
-// Start graph data polling
+// Start graph-data polling
 const startGraphPolling = () => {
-  // Fetch immediately
+  // Fetch once immediately
   fetchGraphData()
-  
+
   // Auto-fetch graph data every 10 seconds
   graphPollTimer = setInterval(async () => {
     await fetchGraphData()
   }, 10000)
 }
 
-// Manual graph refresh
+// Manually refresh the graph
 const refreshGraph = async () => {
   graphLoading.value = true
   await fetchGraphData()
   graphLoading.value = false
 }
 
-// Stop graph data polling
+// Stop graph-data polling
 const stopGraphPolling = () => {
   if (graphPollTimer) {
     clearInterval(graphPollTimer)
@@ -739,24 +739,24 @@ const stopGraphPolling = () => {
 // Fetch graph data
 const fetchGraphData = async () => {
   try {
-    // First get project info to obtain graph_id
+    // First fetch project info to get graph_id
     const projectResponse = await getProject(currentProjectId.value)
-    
+
     if (projectResponse.success && projectResponse.data.graph_id) {
       const graphId = projectResponse.data.graph_id
       projectData.value = projectResponse.data
-      
+
       // Fetch graph data
       const graphResponse = await getGraphData(graphId)
-      
+
       if (graphResponse.success && graphResponse.data) {
         const newData = graphResponse.data
         const newNodeCount = newData.node_count || newData.nodes?.length || 0
         const oldNodeCount = graphData.value?.node_count || graphData.value?.nodes?.length || 0
-        
+
         console.log('Fetching graph data, nodes:', newNodeCount, 'edges:', newData.edge_count || newData.edges?.length || 0)
-        
-        // Update render when data changes
+
+        // Update the render only when data has changed
         if (newNodeCount !== oldNodeCount || !graphData.value) {
           graphData.value = newData
           await nextTick()
@@ -771,10 +771,10 @@ const fetchGraphData = async () => {
 
 // Poll task status
 const startPollingTask = (taskId) => {
-  // Execute query immediately
+  // Run one query immediately
   pollTaskStatus(taskId)
-  
-  // Then poll periodically
+
+  // Then poll on an interval
   pollTimer = setInterval(() => {
     pollTaskStatus(taskId)
   }, 2000)
@@ -784,50 +784,50 @@ const startPollingTask = (taskId) => {
 const pollTaskStatus = async (taskId) => {
   try {
     const response = await getTaskStatus(taskId)
-    
+
     if (response.success) {
       const task = response.data
-      
+
       // Update progress display
       buildProgress.value = {
         progress: task.progress || 0,
         message: task.message || 'Processing...'
       }
-      
+
       console.log('Task status:', task.status, 'Progress:', task.progress)
-      
+
       if (task.status === 'completed') {
         console.log('Graph build complete, loading full data...')
-        
+
         stopPolling()
         stopGraphPolling()
         currentPhase.value = 2
-        
+
         // Update progress display to completed state
         buildProgress.value = {
           progress: 100,
           message: 'Build complete, loading graph...'
         }
-        
+
         // Reload project data to get graph_id
         const projectResponse = await getProject(currentProjectId.value)
         if (projectResponse.success) {
           projectData.value = projectResponse.data
-          
-          // Final load of complete graph data
+
+          // Finally load the full graph data
           if (projectResponse.data.graph_id) {
             console.log('Loading full graph:', projectResponse.data.graph_id)
             await loadGraph(projectResponse.data.graph_id)
-            console.log('Graph loaded successfully')
+            console.log('Graph load complete')
           }
         }
-        
-        // Clear progress display
+
+        // Clear the progress display
         buildProgress.value = null
       } else if (task.status === 'failed') {
         stopPolling()
         stopGraphPolling()
-        error.value = 'Graph construction failed: ' + (task.error || 'Unknown error')
+        error.value = 'Graph build failed: ' + (task.error || 'Unknown error')
         buildProgress.value = null
       }
     }
@@ -861,7 +861,7 @@ const loadGraph = async (graphId) => {
   }
 }
 
-// Render graph (D3.js)
+// Render the graph (D3.js)
 const renderGraph = () => {
   if (!graphSvg.value || !graphData.value) {
     console.log('Cannot render: svg or data missing')
@@ -909,7 +909,7 @@ const renderGraph = () => {
     return
   }
   
-  // Create node map for name lookup
+  // Create node map used to look up names
   const nodeMap = {}
   nodesData.forEach(n => {
     nodeMap[n.uuid] = n
@@ -919,10 +919,10 @@ const renderGraph = () => {
     id: n.uuid,
     name: n.name || 'Unnamed',
     type: n.labels?.find(l => l !== 'Entity' && l !== 'Node') || 'Entity',
-    rawData: n // Save raw data
+    rawData: n // Preserve raw data
   }))
-  
-  // Create node ID set for filtering valid edges
+
+  // Build a set of node IDs to filter valid edges
   const nodeIds = new Set(nodes.map(n => n.id))
   
   const edges = edgesData
@@ -955,7 +955,7 @@ const renderGraph = () => {
     .force('x', d3.forceX(width / 2).strength(0.05))
     .force('y', d3.forceY(height / 2).strength(0.05))
   
-  // Add zoom functionality
+  // Add zoom capability
   const g = svg.append('g')
   
   svg.call(d3.zoom()
@@ -965,7 +965,7 @@ const renderGraph = () => {
       g.attr('transform', event.transform)
     }))
   
-  // Draw edges (with clickable transparent wide lines)
+  // Draw edges (including a clickable transparent wide line)
   const linkGroup = g.append('g')
     .attr('class', 'links')
     .selectAll('g')
@@ -984,7 +984,7 @@ const renderGraph = () => {
     .attr('stroke-width', 1.5)
     .attr('stroke-opacity', 0.6)
   
-  // Transparent wide line for clicking
+  // Transparent wide line for click handling
   linkGroup.append('line')
     .attr('stroke', 'transparent')
     .attr('stroke-width', 10)
@@ -1033,13 +1033,13 @@ const renderGraph = () => {
     .attr('fill', '#333')
     .attr('font-family', 'JetBrains Mono, monospace')
   
-  // Click blank area to close detail panel
+  // Clicking empty space closes the detail panel
   svg.on('click', () => {
     closeDetailPanel()
   })
   
   simulation.on('tick', () => {
-    // Update all edge positions (including visible and transparent click lines)
+    // Update positions of all edges (both visible lines and transparent click regions)
     linkGroup.selectAll('line')
       .attr('x1', d => d.source.x)
       .attr('y1', d => d.source.y)
@@ -1427,7 +1427,7 @@ onUnmounted(() => {
   animation: pulse 1s infinite;
 }
 
-/* Node/Edge detail panel */
+/* Node/edge detail panel */
 .detail-panel {
   position: absolute;
   top: 16px;
@@ -1709,7 +1709,7 @@ onUnmounted(() => {
   padding: 24px;
 }
 
-/* Process phases */
+/* Process phase */
 .process-phase {
   margin-bottom: 24px;
   border: 1px solid #E0E0E0;
@@ -1815,7 +1815,7 @@ onUnmounted(() => {
   color: #333;
 }
 
-/* Relation list */
+/* Relations list */
 .relation-list {
   font-size: 0.8rem;
 }
@@ -1918,7 +1918,7 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-/* Build results */
+/* Build result */
 .build-result {
   display: flex;
   gap: 16px;

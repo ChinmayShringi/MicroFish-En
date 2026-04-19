@@ -1,11 +1,11 @@
 """
-Zep Retrieval Tool Service
-Encapsulates graph search, node reading, edge queries, and other tools for Report Agent use
+Zep retrieval tools service
+Wraps graph search, node reading, and edge query tools for use by the Report Agent
 
-Core Retrieval Tools (Optimized):
-1. InsightForge (Deep Insight Retrieval) - Most powerful hybrid retrieval, auto-generates sub-questions for multi-dimensional search
-2. PanoramaSearch (Panorama Search) - Get full picture, including expired content
-3. QuickSearch (Quick Search) - Fast retrieval
+Core retrieval tools (optimized):
+1. InsightForge (deep insight retrieval) - the most powerful hybrid search; automatically generates sub-questions and retrieves across multiple dimensions
+2. PanoramaSearch (breadth search) - obtain the full picture, including expired content
+3. QuickSearch (simple search) - fast retrieval
 """
 
 import time
@@ -18,6 +18,7 @@ from zep_cloud.client import Zep
 from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.llm_client import LLMClient
+from ..utils.locale import get_locale, t
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 
 logger = get_logger('mirofish.zep_tools')
@@ -42,8 +43,8 @@ class SearchResult:
         }
     
     def to_text(self) -> str:
-        """Convert to text format for LLM understanding"""
-        text_parts = [f"Search query: {self.query}", f"Found {self.total_count} relevant items"]
+        """Convert to text for LLM understanding"""
+        text_parts = [f"Search query: {self.query}", f"Found {self.total_count} related items"]
         
         if self.facts:
             text_parts.append("\n### Related facts:")
@@ -55,7 +56,7 @@ class SearchResult:
 
 @dataclass
 class NodeInfo:
-    """Node information"""
+    """Node info"""
     uuid: str
     name: str
     labels: List[str]
@@ -73,13 +74,13 @@ class NodeInfo:
     
     def to_text(self) -> str:
         """Convert to text format"""
-        entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "Unknown type")
-        return f"Entity: {self.name} (Type: {entity_type})\nSummary: {self.summary}"
+        entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "unknown type")
+        return f"Entity: {self.name} (type: {entity_type})\nSummary: {self.summary}"
 
 
 @dataclass
 class EdgeInfo:
-    """Edge information"""
+    """Edge info"""
     uuid: str
     name: str
     fact: str
@@ -87,7 +88,7 @@ class EdgeInfo:
     target_node_uuid: str
     source_node_name: Optional[str] = None
     target_node_name: Optional[str] = None
-    # Temporal information
+    # Temporal info
     created_at: Optional[str] = None
     valid_at: Optional[str] = None
     invalid_at: Optional[str] = None
@@ -115,36 +116,36 @@ class EdgeInfo:
         base_text = f"Relationship: {source} --[{self.name}]--> {target}\nFact: {self.fact}"
         
         if include_temporal:
-            valid_at = self.valid_at or "Unknown"
-            invalid_at = self.invalid_at or "Present"
+            valid_at = self.valid_at or "unknown"
+            invalid_at = self.invalid_at or "present"
             base_text += f"\nValidity: {valid_at} - {invalid_at}"
             if self.expired_at:
-                base_text += f" (Expired: {self.expired_at})"
+                base_text += f" (expired: {self.expired_at})"
         
         return base_text
     
     @property
     def is_expired(self) -> bool:
-        """Whether expired"""
+        """Whether it has expired"""
         return self.expired_at is not None
     
     @property
     def is_invalid(self) -> bool:
-        """Whether invalidated"""
+        """Whether it is invalid"""
         return self.invalid_at is not None
 
 
 @dataclass
 class InsightForgeResult:
     """
-    Deep Insight Retrieval Results (InsightForge)
-    Contains retrieval results from multiple sub-questions and comprehensive analysis
+    Deep insight retrieval result (InsightForge)
+    Contains retrieval results for multiple sub-questions plus a combined analysis
     """
     query: str
     simulation_requirement: str
     sub_queries: List[str]
     
-    # Multi-dimensional retrieval results
+    # Per-dimension retrieval results
     semantic_facts: List[str] = field(default_factory=list)  # Semantic search results
     entity_insights: List[Dict[str, Any]] = field(default_factory=list)  # Entity insights
     relationship_chains: List[str] = field(default_factory=list)  # Relationship chains
@@ -168,42 +169,42 @@ class InsightForgeResult:
         }
     
     def to_text(self) -> str:
-        """Convert to detailed text format for LLM understanding"""
+        """Convert to detailed text for LLM understanding"""
         text_parts = [
-            f"## Future Prediction Deep Analysis",
+            f"## Deep future-prediction analysis",
             f"Analysis question: {self.query}",
-            f"Prediction scenario: {self.simulation_requirement}",
-            f"\n### Prediction DataStatistics",
-            f"- Related prediction facts: {self.total_facts}",
-            f"- Involved entities: {self.total_entities}",
+            f"Forecast scenario: {self.simulation_requirement}",
+            f"\n### Forecast data statistics",
+            f"- Related forecast facts: {self.total_facts}",
+            f"- Entities involved: {self.total_entities}",
             f"- Relationship chains: {self.total_relationships}"
         ]
         
         # Sub-questions
         if self.sub_queries:
-            text_parts.append(f"\n### Analyzed Sub-questions")
+            text_parts.append(f"\n### Sub-questions analyzed")
             for i, sq in enumerate(self.sub_queries, 1):
                 text_parts.append(f"{i}. {sq}")
         
         # Semantic search results
         if self.semantic_facts:
-            text_parts.append(f"\n### [Key Facts] (quote these in the report)")
+            text_parts.append(f"\n### [Key facts] (please quote these verbatim in the report)")
             for i, fact in enumerate(self.semantic_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
         
         # Entity insights
         if self.entity_insights:
-            text_parts.append(f"\n### [Core Entities]")
+            text_parts.append(f"\n### [Core entities]")
             for entity in self.entity_insights:
-                text_parts.append(f"- **{entity.get('name', 'Unknown')}** ({entity.get('type', 'Entity')})")
+                text_parts.append(f"- **{entity.get('name', 'unknown')}** ({entity.get('type', 'entity')})")
                 if entity.get('summary'):
-                    text_parts.append(f"  Summary: \"{entity.get('summary')}\""
+                    text_parts.append(f"  Summary: \"{entity.get('summary')}\"")
                 if entity.get('related_facts'):
                     text_parts.append(f"  Related facts: {len(entity.get('related_facts', []))}")
         
         # Relationship chains
         if self.relationship_chains:
-            text_parts.append(f"\n### [Relationship Chains]")
+            text_parts.append(f"\n### [Relationship chains]")
             for chain in self.relationship_chains:
                 text_parts.append(f"- {chain}")
         
@@ -213,8 +214,8 @@ class InsightForgeResult:
 @dataclass
 class PanoramaResult:
     """
-    Panorama Search Results
-    Contains all related information, including expired content
+    Breadth search result (Panorama)
+    Contains all relevant info, including expired content
     """
     query: str
     
@@ -224,10 +225,10 @@ class PanoramaResult:
     all_edges: List[EdgeInfo] = field(default_factory=list)
     # Currently valid facts
     active_facts: List[str] = field(default_factory=list)
-    # Expired/invalidated facts (historical records)
+    # Expired/invalid facts (historical records)
     historical_facts: List[str] = field(default_factory=list)
     
-    # Statistics
+    # Stats
     total_nodes: int = 0
     total_edges: int = 0
     active_count: int = 0
@@ -247,9 +248,9 @@ class PanoramaResult:
         }
     
     def to_text(self) -> str:
-        """Convert to text format (complete version, not truncated)"""
+        """Convert to text format (complete, not truncated)"""
         text_parts = [
-            f"## Panorama Search Results (Future Full View)",
+            f"## Breadth search result (future panorama view)",
             f"Query: {self.query}",
             f"\n### Statistics",
             f"- Total nodes: {self.total_nodes}",
@@ -260,21 +261,21 @@ class PanoramaResult:
         
         # Currently valid facts (full output, not truncated)
         if self.active_facts:
-            text_parts.append(f"\n### [Currently Valid Facts] (simulation results)")
+            text_parts.append(f"\n### [Currently valid facts] (verbatim simulation output)")
             for i, fact in enumerate(self.active_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
         
         # Historical/expired facts (full output, not truncated)
         if self.historical_facts:
-            text_parts.append(f"\n### [Historical/Expired Facts] (evolution records)")
+            text_parts.append(f"\n### [Historical/expired facts] (evolution record)")
             for i, fact in enumerate(self.historical_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
         
         # Key entities (full output, not truncated)
         if self.all_nodes:
-            text_parts.append(f"\n### [Involved Entities]")
+            text_parts.append(f"\n### [Entities involved]")
             for node in self.all_nodes:
-                entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "Entity")
+                entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "entity")
                 text_parts.append(f"- **{node.name}** ({entity_type})")
         
         return "\n".join(text_parts)
@@ -282,13 +283,13 @@ class PanoramaResult:
 
 @dataclass
 class AgentInterview:
-    """Single Agent interview result"""
+    """Interview result for a single agent"""
     agent_name: str
-    agent_role: str  # Role type (e.g., student, teacher, media, etc.)
-    agent_bio: str  # Bio
-    question: str  # Interview question
-    response: str  # Interview response
-    key_quotes: List[str] = field(default_factory=list)  # Key quotes
+    agent_role: str  # role type (e.g., Student, Professor, Media)
+    agent_bio: str  # bio
+    question: str  # interview question
+    response: str  # interview response
+    key_quotes: List[str] = field(default_factory=list)  # key quotes
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -302,21 +303,21 @@ class AgentInterview:
     
     def to_text(self) -> str:
         text = f"**{self.agent_name}** ({self.agent_role})\n"
-        # Display full agent_bio, not truncated
+        # Display the complete agent_bio, not truncated
         text += f"_Bio: {self.agent_bio}_\n\n"
         text += f"**Q:** {self.question}\n\n"
         text += f"**A:** {self.response}\n"
         if self.key_quotes:
-            text += "\n**Key Quotes:**\n"
+            text += "\n**Key quotes:**\n"
             for quote in self.key_quotes:
-                # Clean various quotation marks
+                # Clean up various quote marks
                 clean_quote = quote.replace('\u201c', '').replace('\u201d', '').replace('"', '')
                 clean_quote = clean_quote.replace('\u300c', '').replace('\u300d', '')
                 clean_quote = clean_quote.strip()
-                # Remove leading punctuation
+                # Strip leading punctuation
                 while clean_quote and clean_quote[0] in '，,；;：:、。！？\n\r\t ':
                     clean_quote = clean_quote[1:]
-                # Filter garbage content containing question numbers
+                # Filter out junk content containing question numbers (Question 1-9)
                 skip = False
                 for d in '123456789':
                     if f'\u95ee\u9898{d}' in clean_quote:
@@ -324,7 +325,7 @@ class AgentInterview:
                         break
                 if skip:
                     continue
-                # Truncate overly long content (truncate at period, not hard truncate)
+                # Truncate overly long content (cut at the period, not hard-truncate)
                 if len(clean_quote) > 150:
                     dot_pos = clean_quote.find('\u3002', 80)
                     if dot_pos > 0:
@@ -339,23 +340,23 @@ class AgentInterview:
 @dataclass
 class InterviewResult:
     """
-    Interview Result
-    Contains interview responses from multiple simulation Agents
+    Interview result
+    Contains interview responses from multiple simulation agents
     """
-    interview_topic: str  # Interview topic
-    interview_questions: List[str]  # Interview questions list
+    interview_topic: str  # interview topic
+    interview_questions: List[str]  # list of interview questions
     
-    # Selected Agents for interview
+    # Agents selected for interview
     selected_agents: List[Dict[str, Any]] = field(default_factory=list)
-    # Interview responses from each Agent
+    # Interview responses per agent
     interviews: List[AgentInterview] = field(default_factory=list)
     
-    # Reasoning for Agent selection
+    # Reason for agent selection
     selection_reasoning: str = ""
     # Consolidated interview summary
     summary: str = ""
     
-    # Statistics
+    # Stats
     total_agents: int = 0
     interviewed_count: int = 0
     
@@ -374,13 +375,13 @@ class InterviewResult:
     def to_text(self) -> str:
         """Convert to detailed text format for LLM understanding and report citation"""
         text_parts = [
-            "## In-Depth Interview Report",
-            f"**Interview Topic:** {self.interview_topic}",
-            f"**Interviewees:** {self.interviewed_count} / {self.total_agents} simulation Agents",
-            "\n### Interviewee Selection Reasoning",
-            self.selection_reasoning or "(Automatic selection)",
+            "## In-depth Interview Report",
+            f"**Interview topic:** {self.interview_topic}",
+            f"**Number interviewed:** {self.interviewed_count} / {self.total_agents}  simulation agents",
+            "\n### Rationale for interview selection",
+            self.selection_reasoning or "(auto-selected)",
             "\n---",
-            "\n### Interview Transcripts",
+            "\n### Interview transcripts",
         ]
 
         if self.interviews:
@@ -389,32 +390,32 @@ class InterviewResult:
                 text_parts.append(interview.to_text())
                 text_parts.append("\n---")
         else:
-            text_parts.append("(No interview records)\n\n---")
+            text_parts.append("(no interview records)\n\n---")
 
-        text_parts.append("\n### Interview Summary and Key Insights")
-        text_parts.append(self.summary or "(No summary)")
+        text_parts.append("\n### Interview summary and key points")
+        text_parts.append(self.summary or "(no summary)")
 
         return "\n".join(text_parts)
 
 
 class ZepToolsService:
     """
-    Zep Retrieval Tool Service
+    Zep retrieval tools service
     
-    [Core Retrieval Tools - Optimized]
-    1. insight_forge - Deep insight retrieval (most powerful, auto-generates sub-questions, multi-dimensional search)
-    2. panorama_search - Panorama search (get full picture, including expired content)
-    3. quick_search - Quick search (fast retrieval)
-    4. interview_agents - Deep interview (interview simulation Agents, get multi-perspective views)
+    [Core retrieval tools - optimized]
+    1. insight_forge - deep insight retrieval (most powerful; auto-generates sub-questions and retrieves across dimensions)
+    2. panorama_search - breadth search (full picture, including expired content)
+    3. quick_search - simple search (fast retrieval)
+    4. interview_agents - in-depth interview (interview simulation agents for multi-perspective viewpoints)
     
-    [Basic Tools]
-    - search_graph - Graph semantic search
-    - get_all_nodes - Get all graph nodes
-    - get_all_edges - Get all graph edges (with temporal info)
-    - get_node_detail - Get node details
-    - get_node_edges - Get node-related edges
-    - get_entities_by_type - Get entities by type
-    - get_entity_summary - Get entity relationship summary
+    [Basic tools]
+    - search_graph - graph semantic search
+    - get_all_nodes - get all nodes in the graph
+    - get_all_edges - get all edges in the graph (with temporal info)
+    - get_node_detail - get node details
+    - get_node_edges - get edges related to a node
+    - get_entities_by_type - get entities by type
+    - get_entity_summary - get an entity's relationship summary
     """
     
     # Retry configuration
@@ -427,13 +428,13 @@ class ZepToolsService:
             raise ValueError("ZEP_API_KEY is not configured")
         
         self.client = Zep(api_key=self.api_key)
-        # LLM client used for InsightForge sub-question generation
+        # LLM client used by InsightForge to generate sub-questions
         self._llm_client = llm_client
-        logger.info("ZepToolsService initialized")
+        logger.info(t("console.zepToolsInitialized"))
     
     @property
     def llm(self) -> LLMClient:
-        """Lazy initialize LLM client"""
+        """Lazily initialize the LLM client"""
         if self._llm_client is None:
             self._llm_client = LLMClient()
         return self._llm_client
@@ -451,13 +452,12 @@ class ZepToolsService:
                 last_exception = e
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Zep {operation_name} attempt {attempt + 1} failed: {str(e)[:100]}, "
-                        f"retrying in {delay:.1f}s..."
+                        t("console.zepRetryAttempt", operation=operation_name, attempt=attempt + 1, error=str(e)[:100], delay=f"{delay:.1f}")
                     )
                     time.sleep(delay)
                     delay *= 2
                 else:
-                    logger.error(f"Zep {operation_name} still failed after {max_retries} attempts: {str(e)}")
+                    logger.error(t("console.zepAllRetriesFailed", operation=operation_name, retries=max_retries, error=str(e)))
         
         raise last_exception
     
@@ -470,22 +470,22 @@ class ZepToolsService:
     ) -> SearchResult:
         """
         Graph semantic search
-        
-        Uses hybrid search (semantic + BM25) to search for related information in the graph.
-        Falls back to local keyword matching if Zep Cloud search API is unavailable.
-        
+
+        Uses hybrid search (semantic + BM25) to search for relevant information in the graph.
+        Falls back to local keyword matching if the Zep Cloud search API is unavailable.
+
         Args:
             graph_id: Graph ID (Standalone Graph)
             query: Search query
             limit: Number of results to return
             scope: Search scope, "edges" or "nodes"
-            
+
         Returns:
-            SearchResult: Search result
+            SearchResult: Search results
         """
-        logger.info(f"Graph search: graph_id={graph_id}, query={query[:50]}...")
+        logger.info(t("console.graphSearch", graphId=graph_id, query=query[:50]))
         
-        # Try using Zep Cloud Search API
+        # Try using the Zep Cloud Search API
         try:
             search_results = self._call_with_retry(
                 func=lambda: self.client.graph.search(
@@ -495,7 +495,7 @@ class ZepToolsService:
                     scope=scope,
                     reranker="cross_encoder"
                 ),
-                operation_name=f"graph_search(graph={graph_id})"
+                operation_name=t("console.graphSearchOp", graphId=graph_id)
             )
             
             facts = []
@@ -528,7 +528,7 @@ class ZepToolsService:
                     if hasattr(node, 'summary') and node.summary:
                         facts.append(f"[{node.name}]: {node.summary}")
             
-            logger.info(f"Search completed: Found {len(facts)} related facts")
+            logger.info(t("console.searchComplete", count=len(facts)))
             
             return SearchResult(
                 facts=facts,
@@ -539,7 +539,7 @@ class ZepToolsService:
             )
             
         except Exception as e:
-            logger.warning(f"Zep Search API failed, falling back to local search: {str(e)}")
+            logger.warning(t("console.zepSearchApiFallback", error=str(e)))
             # Fallback: use local keyword matching search
             return self._local_search(graph_id, query, limit, scope)
     
@@ -551,20 +551,20 @@ class ZepToolsService:
         scope: str = "edges"
     ) -> SearchResult:
         """
-        Local keyword matching search (fallback for Zep Search API)
-        
-        Gets all edges/nodes and performs local keyword matching
-        
+        Local keyword-matching search (fallback for the Zep Search API)
+
+        Fetches all edges/nodes and performs keyword matching locally.
+
         Args:
             graph_id: Graph ID
             query: Search query
             limit: Number of results to return
             scope: Search scope
-            
+
         Returns:
-            SearchResult: Search result
+            SearchResult: Search results
         """
-        logger.info(f"Using local search: query={query[:30]}...")
+        logger.info(t("console.usingLocalSearch", query=query[:30]))
         
         facts = []
         edges_result = []
@@ -575,14 +575,14 @@ class ZepToolsService:
         keywords = [w.strip() for w in query_lower.replace(',', ' ').replace('，', ' ').split() if len(w.strip()) > 1]
         
         def match_score(text: str) -> int:
-            """Calculate text-to-query match score"""
+            """Compute match score between text and query"""
             if not text:
                 return 0
             text_lower = text.lower()
             # Full query match
             if query_lower in text_lower:
                 return 100
-            # Keyword matching
+            # Keyword match
             score = 0
             for keyword in keywords:
                 if keyword in text_lower:
@@ -591,7 +591,7 @@ class ZepToolsService:
         
         try:
             if scope in ["edges", "both"]:
-                # Get all edges and match
+                # Fetch all edges and match
                 all_edges = self.get_all_edges(graph_id)
                 scored_edges = []
                 for edge in all_edges:
@@ -614,7 +614,7 @@ class ZepToolsService:
                     })
             
             if scope in ["nodes", "both"]:
-                # Get all nodes and match
+                # Fetch all nodes and match
                 all_nodes = self.get_all_nodes(graph_id)
                 scored_nodes = []
                 for node in all_nodes:
@@ -634,10 +634,10 @@ class ZepToolsService:
                     if node.summary:
                         facts.append(f"[{node.name}]: {node.summary}")
             
-            logger.info(f"Local search completed: Found {len(facts)} related facts")
+            logger.info(t("console.localSearchComplete", count=len(facts)))
             
         except Exception as e:
-            logger.error(f"Local search failed: {str(e)}")
+            logger.error(t("console.localSearchFailed", error=str(e)))
         
         return SearchResult(
             facts=facts,
@@ -649,15 +649,15 @@ class ZepToolsService:
     
     def get_all_nodes(self, graph_id: str) -> List[NodeInfo]:
         """
-        Get all nodes from graph (paginated)
+        Get all nodes of the graph (paginated)
 
         Args:
             graph_id: Graph ID
 
         Returns:
-            Node list
+            List of nodes
         """
-        logger.info(f"Fetching all nodes from graph {graph_id}...")
+        logger.info(t("console.fetchingAllNodes", graphId=graph_id))
 
         nodes = fetch_all_nodes(self.client, graph_id)
 
@@ -672,21 +672,21 @@ class ZepToolsService:
                 attributes=node.attributes or {}
             ))
 
-        logger.info(f"Fetched {len(result)} nodes")
+        logger.info(t("console.fetchedNodes", count=len(result)))
         return result
 
     def get_all_edges(self, graph_id: str, include_temporal: bool = True) -> List[EdgeInfo]:
         """
-        Get all edges from graph (paginated, with temporal information)
+        Get all edges of the graph (paginated, including temporal information)
 
         Args:
             graph_id: Graph ID
-            include_temporal: Whether to include temporal information (default True)
+            include_temporal: Whether to include temporal info (default True)
 
         Returns:
-            Edge list (includes created_at, valid_at, invalid_at, expired_at)
+            List of edges (including created_at, valid_at, invalid_at, expired_at)
         """
-        logger.info(f"Fetching all edges from graph {graph_id}...")
+        logger.info(t("console.fetchingAllEdges", graphId=graph_id))
 
         edges = fetch_all_edges(self.client, graph_id)
 
@@ -701,7 +701,7 @@ class ZepToolsService:
                 target_node_uuid=edge.target_node_uuid or ""
             )
 
-            # Add temporal information
+            # Add temporal info
             if include_temporal:
                 edge_info.created_at = getattr(edge, 'created_at', None)
                 edge_info.valid_at = getattr(edge, 'valid_at', None)
@@ -710,25 +710,25 @@ class ZepToolsService:
 
             result.append(edge_info)
 
-        logger.info(f"Fetched {len(result)} edges")
+        logger.info(t("console.fetchedEdges", count=len(result)))
         return result
     
     def get_node_detail(self, node_uuid: str) -> Optional[NodeInfo]:
         """
-        Get details of a single node
-        
+        Get detailed info for a single node
+
         Args:
             node_uuid: Node UUID
-            
+
         Returns:
-            Node information or None
+            Node info or None
         """
-        logger.info(f"Getting node details: {node_uuid[:8]}...")
+        logger.info(t("console.fetchingNodeDetail", uuid=node_uuid[:8]))
         
         try:
             node = self._call_with_retry(
                 func=lambda: self.client.graph.node.get(uuid_=node_uuid),
-                operation_name=f"get_node_detail(uuid={node_uuid[:8]}...)"
+                operation_name=t("console.fetchNodeDetailOp", uuid=node_uuid[:8])
             )
             
             if not node:
@@ -742,39 +742,39 @@ class ZepToolsService:
                 attributes=node.attributes or {}
             )
         except Exception as e:
-            logger.error(f"Failed to get node details: {str(e)}")
+            logger.error(t("console.fetchNodeDetailFailed", error=str(e)))
             return None
     
     def get_node_edges(self, graph_id: str, node_uuid: str) -> List[EdgeInfo]:
         """
         Get all edges related to a node
-        
-        Gets all graph edges and filters for edges related to the specified node
-        
+
+        Fetches all edges in the graph, then filters those connected to the given node
+
         Args:
             graph_id: Graph ID
             node_uuid: Node UUID
-            
+
         Returns:
-            Edge list
+            List of edges
         """
-        logger.info(f"Getting edges for node {node_uuid[:8]}...")
+        logger.info(t("console.fetchingNodeEdges", uuid=node_uuid[:8]))
         
         try:
-            # Get all graph edges, then filter
+            # Fetch all edges in the graph, then filter
             all_edges = self.get_all_edges(graph_id)
-            
+
             result = []
             for edge in all_edges:
-                # Check if edge is related to specified node (as source or target)
+                # Check if the edge is connected to the given node (as source or target)
                 if edge.source_node_uuid == node_uuid or edge.target_node_uuid == node_uuid:
                     result.append(edge)
             
-            logger.info(f"Found {len(result)} edges related to node")
+            logger.info(t("console.foundNodeEdges", count=len(result)))
             return result
             
         except Exception as e:
-            logger.warning(f"Failed to get node edges: {str(e)}")
+            logger.warning(t("console.fetchNodeEdgesFailed", error=str(e)))
             return []
     
     def get_entities_by_type(
@@ -784,25 +784,25 @@ class ZepToolsService:
     ) -> List[NodeInfo]:
         """
         Get entities by type
-        
+
         Args:
             graph_id: Graph ID
-            entity_type: Entity type (e.g., Student, PublicFigure, etc.)
-            
+            entity_type: Entity type (e.g., Student, PublicFigure)
+
         Returns:
-            Entity list matching the type
+            List of entities matching the type
         """
-        logger.info(f"Getting entities of type {entity_type}...")
+        logger.info(t("console.fetchingEntitiesByType", type=entity_type))
         
         all_nodes = self.get_all_nodes(graph_id)
         
         filtered = []
         for node in all_nodes:
-            # Check if labels contain the specified type
+            # Check whether labels include the specified type
             if entity_type in node.labels:
                 filtered.append(node)
         
-        logger.info(f"Found {len(filtered)} entities of type {entity_type}")
+        logger.info(t("console.foundEntitiesByType", count=len(filtered), type=entity_type))
         return filtered
     
     def get_entity_summary(
@@ -811,27 +811,27 @@ class ZepToolsService:
         entity_name: str
     ) -> Dict[str, Any]:
         """
-        Get relationship summary for specified entity
-        
-        Search for all information related to the entity and generate a summary
-        
+        Get a relationship summary for a given entity
+
+        Searches for all information related to the entity and generates a summary
+
         Args:
             graph_id: Graph ID
             entity_name: Entity name
-            
+
         Returns:
             Entity summary information
         """
-        logger.info(f"Getting relationship summary for entity {entity_name}...")
+        logger.info(t("console.fetchingEntitySummary", name=entity_name))
         
-        # First search for information related to this entity
+        # First search for information related to the entity
         search_result = self.search_graph(
             graph_id=graph_id,
             query=entity_name,
             limit=20
         )
         
-        # Try to find this entity among all nodes
+        # Try to locate the entity among all nodes
         all_nodes = self.get_all_nodes(graph_id)
         entity_node = None
         for node in all_nodes:
@@ -841,7 +841,7 @@ class ZepToolsService:
         
         related_edges = []
         if entity_node:
-            # Pass graph_id parameter
+            # Pass graph_id argument
             related_edges = self.get_node_edges(graph_id, entity_node.uuid)
         
         return {
@@ -855,26 +855,26 @@ class ZepToolsService:
     def get_graph_statistics(self, graph_id: str) -> Dict[str, Any]:
         """
         Get graph statistics
-        
+
         Args:
             graph_id: Graph ID
-            
+
         Returns:
-            Statistics
+            Statistics information
         """
-        logger.info(f"Getting statistics for graph {graph_id}...")
+        logger.info(t("console.fetchingGraphStats", graphId=graph_id))
         
         nodes = self.get_all_nodes(graph_id)
         edges = self.get_all_edges(graph_id)
         
-        # Count entity type distribution
+        # Entity type distribution stats
         entity_types = {}
         for node in nodes:
             for label in node.labels:
                 if label not in ["Entity", "Node"]:
                     entity_types[label] = entity_types.get(label, 0) + 1
         
-        # Count relationship type distribution
+        # Relationship type distribution stats
         relation_types = {}
         for edge in edges:
             relation_types[edge.name] = relation_types.get(edge.name, 0) + 1
@@ -895,33 +895,33 @@ class ZepToolsService:
     ) -> Dict[str, Any]:
         """
         Get simulation-related context information
-        
-        Comprehensive search for all information related to simulation requirements
-        
+
+        Performs a comprehensive search for all information related to the simulation requirement
+
         Args:
             graph_id: Graph ID
             simulation_requirement: Simulation requirement description
-            limit: Quantity limit for each type of information
-            
+            limit: Item count limit per information category
+
         Returns:
             Simulation context information
         """
-        logger.info(f"Getting simulation context: {simulation_requirement[:50]}...")
+        logger.info(t("console.fetchingSimContext", requirement=simulation_requirement[:50]))
         
-        # Search for information related to simulation requirements
+        # Search for information related to the simulation requirement
         search_result = self.search_graph(
             graph_id=graph_id,
             query=simulation_requirement,
             limit=limit
         )
         
-        # Get graph statistics
+        # Fetch graph statistics
         stats = self.get_graph_statistics(graph_id)
         
-        # Get all entity nodes
+        # Fetch all entity nodes
         all_nodes = self.get_all_nodes(graph_id)
         
-        # Filter entities with actual types (not pure Entity nodes)
+        # Filter entities that have an actual type (not plain Entity nodes)
         entities = []
         for node in all_nodes:
             custom_labels = [l for l in node.labels if l not in ["Entity", "Node"]]
@@ -936,11 +936,11 @@ class ZepToolsService:
             "simulation_requirement": simulation_requirement,
             "related_facts": search_result.facts,
             "graph_statistics": stats,
-            "entities": entities[:limit],  # Limit quantity
+            "entities": entities[:limit],  # Limit count
             "total_entities": len(entities)
         }
     
-    # ========== Core Retrieval Tools (Optimized) ==========
+    # ========== Core retrieval tools (optimized) ==========
     
     def insight_forge(
         self,
@@ -952,25 +952,25 @@ class ZepToolsService:
     ) -> InsightForgeResult:
         """
         [InsightForge - Deep Insight Retrieval]
-        
-        Most powerful hybrid retrieval function, auto-decomposes questions for multi-dimensional search:
-        1. Uses LLM to decompose question into multiple sub-questions
-        2. Performs semantic search for each sub-question
-        3. Extracts related entities and gets their detailed information
-        4. Tracks relationship chains
-        5. Integrates all results to generate deep insights
-        
+
+        The most powerful hybrid retrieval function. Automatically decomposes the question and retrieves across multiple dimensions:
+        1. Use an LLM to break the question into multiple sub-questions
+        2. Run semantic search for each sub-question
+        3. Extract relevant entities and fetch their detailed information
+        4. Trace relationship chains
+        5. Consolidate all results and generate deep insights
+
         Args:
             graph_id: Graph ID
             query: User question
             simulation_requirement: Simulation requirement description
-            report_context: Report context (optional, for more precise sub-question generation)
+            report_context: Report context (optional, used for more precise sub-question generation)
             max_sub_queries: Maximum number of sub-questions
-            
+
         Returns:
-            InsightForgeResult: Deep insight retrieval results
+            InsightForgeResult: Deep insight retrieval result
         """
-        logger.info(f"InsightForge deep insight retrieval: {query[:50]}...")
+        logger.info(t("console.insightForgeStart", query=query[:50]))
         
         result = InsightForgeResult(
             query=query,
@@ -978,7 +978,7 @@ class ZepToolsService:
             sub_queries=[]
         )
         
-        # Step 1: Generate sub-questions using LLM
+        # Step 1: Use LLM to generate sub-questions
         sub_queries = self._generate_sub_queries(
             query=query,
             simulation_requirement=simulation_requirement,
@@ -986,9 +986,9 @@ class ZepToolsService:
             max_queries=max_sub_queries
         )
         result.sub_queries = sub_queries
-        logger.info(f"Generated {len(sub_queries)} sub-questions")
+        logger.info(t("console.generatedSubQueries", count=len(sub_queries)))
         
-        # Step 2: Perform semantic search for each sub-question
+        # Step 2: Run semantic search for each sub-question
         all_facts = []
         all_edges = []
         seen_facts = set()
@@ -1008,7 +1008,7 @@ class ZepToolsService:
             
             all_edges.extend(search_result.edges)
         
-        # Also search the original question
+        # Also search with the original question
         main_search = self.search_graph(
             graph_id=graph_id,
             query=query,
@@ -1023,7 +1023,7 @@ class ZepToolsService:
         result.semantic_facts = all_facts
         result.total_facts = len(all_facts)
         
-        # Step 3: Extract related entity UUIDs from edges, only get info for these entities
+        # Step 3: Extract related entity UUIDs from edges, fetch only those entities (not all nodes)
         entity_uuids = set()
         for edge_data in all_edges:
             if isinstance(edge_data, dict):
@@ -1034,19 +1034,19 @@ class ZepToolsService:
                 if target_uuid:
                     entity_uuids.add(target_uuid)
         
-        # Get details for all related entities (unlimited, full output)
+        # Fetch details for all related entities (no limit, full output)
         entity_insights = []
-        node_map = {}  # For subsequent relationship chain building
-        
-        for uuid in list(entity_uuids):  # Process all entities, not truncated
+        node_map = {}  # Used for later relationship chain construction
+
+        for uuid in list(entity_uuids):  # Process all entities, no truncation
             if not uuid:
                 continue
             try:
-                # Get info for each related node individually
+                # Fetch info for each related node individually
                 node = self.get_node_detail(uuid)
                 if node:
                     node_map[uuid] = node
-                    entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "Entity")
+                    entity_type = next((l for l in node.labels if l not in ["Entity", "Node"]), "entity")
                     
                     # Get all facts related to this entity (not truncated)
                     related_facts = [
@@ -1062,15 +1062,15 @@ class ZepToolsService:
                         "related_facts": related_facts  # Full output, not truncated
                     })
             except Exception as e:
-                logger.debug(f"Failed to get node {uuid}: {e}")
+                logger.debug(f"Failed to fetch node {uuid}: {e}")
                 continue
         
         result.entity_insights = entity_insights
         result.total_entities = len(entity_insights)
         
-        # Step 4: Build all relationship chains (unlimited)
+        # Step 4: Build all relationship chains (no limit)
         relationship_chains = []
-        for edge_data in all_edges:  # Process all edges, not truncated
+        for edge_data in all_edges:  # Process all edges, no truncation
             if isinstance(edge_data, dict):
                 source_uuid = edge_data.get('source_node_uuid', '')
                 target_uuid = edge_data.get('target_node_uuid', '')
@@ -1086,7 +1086,7 @@ class ZepToolsService:
         result.relationship_chains = relationship_chains
         result.total_relationships = len(relationship_chains)
         
-        logger.info(f"InsightForge completed: {result.total_facts} facts, {result.total_entities} entities, {result.total_relationships} relationships")
+        logger.info(t("console.insightForgeComplete", facts=result.total_facts, entities=result.total_entities, relationships=result.total_relationships))
         return result
     
     def _generate_sub_queries(
@@ -1097,17 +1097,17 @@ class ZepToolsService:
         max_queries: int = 5
     ) -> List[str]:
         """
-        Generate sub-questions using LLM
-        
-        Decompose complex questions into multiple independently searchable sub-questions
+        Use an LLM to generate sub-questions
+
+        Decomposes a complex question into multiple sub-questions that can be retrieved independently
         """
-        system_prompt = """You are a professional question analysis expert. Your task is to decompose a complex question into multiple sub-questions that can be independently observed in the simulated world.
+        system_prompt = """You are a professional question analysis expert. Your task is to break down a complex question into multiple sub-questions that can be independently observed in a simulated world.
 
 Requirements:
-1. Each sub-question should be specific enough to find related Agent behaviors or events in the simulated world
+1. Each sub-question should be specific enough to find relevant agent behaviors or events in the simulated world
 2. Sub-questions should cover different dimensions of the original question (e.g., who, what, why, how, when, where)
 3. Sub-questions should be relevant to the simulation scenario
-4. Return JSON format: {"sub_queries": ["sub-question 1", "sub-question 2", ...]}"""
+4. Return JSON format: {"sub_queries": ["sub_question_1", "sub_question_2", ...]}"""
 
         user_prompt = f"""Simulation requirement background:
 {simulation_requirement}
@@ -1129,17 +1129,17 @@ Return a JSON-formatted list of sub-questions."""
             )
             
             sub_queries = response.get("sub_queries", [])
-            # Ensure it is a string list
+            # Ensure it is a list of strings
             return [str(sq) for sq in sub_queries[:max_queries]]
             
         except Exception as e:
-            logger.warning(f"Failed to generate sub-questions: {str(e)}, using default sub-questions")
-            # Fallback: return variants based on original question
+            logger.warning(t("console.generateSubQueriesFailed", error=str(e)))
+            # Fallback: return variants based on the original question
             return [
                 query,
-                f"Main participants in {query}",
+                f"Main participants of {query}",
                 f"Causes and impacts of {query}",
-                f"Development process of {query}"
+                f"Progression of {query}"
             ][:max_queries]
     
     def panorama_search(
@@ -1150,40 +1150,40 @@ Return a JSON-formatted list of sub-questions."""
         limit: int = 50
     ) -> PanoramaResult:
         """
-        [PanoramaSearch - Panorama Search]
-        
-        Gets a full-picture view, including all related content and historical/expired information:
-        1. Gets all related nodes
-        2. Gets all edges (including expired/invalidated)
-        3. Categorizes currently valid and historical information
-        
-        This tool is suitable for scenarios requiring understanding of the full event picture and tracking evolution.
-        
+        [PanoramaSearch - Breadth Search]
+
+        Retrieves a panoramic view, including all related content and historical/expired information:
+        1. Fetch all related nodes
+        2. Fetch all edges (including expired/invalidated ones)
+        3. Classify and organize currently valid and historical information
+
+        This tool is suitable for scenarios requiring a full-picture view of events and tracking evolution over time.
+
         Args:
             graph_id: Graph ID
-            query: Search query (for relevance ranking)
+            query: Search query (used for relevance ranking)
             include_expired: Whether to include expired content (default True)
             limit: Result count limit
-            
+
         Returns:
-            PanoramaResult: Panorama search results
+            PanoramaResult: Breadth search result
         """
-        logger.info(f"PanoramaSearch panorama search: {query[:50]}...")
+        logger.info(t("console.panoramaSearchStart", query=query[:50]))
         
         result = PanoramaResult(query=query)
         
-        # Get all nodes
+        # Fetch all nodes
         all_nodes = self.get_all_nodes(graph_id)
         node_map = {n.uuid: n for n in all_nodes}
         result.all_nodes = all_nodes
         result.total_nodes = len(all_nodes)
         
-        # Get all edges (with temporal information)
+        # Fetch all edges (including temporal info)
         all_edges = self.get_all_edges(graph_id, include_temporal=True)
         result.all_edges = all_edges
         result.total_edges = len(all_edges)
         
-        # Categorize facts
+        # Classify facts
         active_facts = []
         historical_facts = []
         
@@ -1191,24 +1191,24 @@ Return a JSON-formatted list of sub-questions."""
             if not edge.fact:
                 continue
             
-            # Add entity names to facts
+            # Attach entity names to facts
             source_name = node_map.get(edge.source_node_uuid, NodeInfo('', '', [], '', {})).name or edge.source_node_uuid[:8]
             target_name = node_map.get(edge.target_node_uuid, NodeInfo('', '', [], '', {})).name or edge.target_node_uuid[:8]
             
-            # Determine if expired/invalidated
+            # Determine whether expired/invalidated
             is_historical = edge.is_expired or edge.is_invalid
             
             if is_historical:
-                # Historical/expired facts, add time markers
-                valid_at = edge.valid_at or "Unknown"
-                invalid_at = edge.invalid_at or edge.expired_at or "Unknown"
+                # Historical/expired fact; add time marker
+                valid_at = edge.valid_at or "unknown"
+                invalid_at = edge.invalid_at or edge.expired_at or "unknown"
                 fact_with_time = f"[{valid_at} - {invalid_at}] {edge.fact}"
                 historical_facts.append(fact_with_time)
             else:
-                # Currently valid facts
+                # Currently valid fact
                 active_facts.append(edge.fact)
         
-        # Sort by query relevance
+        # Rank by relevance to the query
         query_lower = query.lower()
         keywords = [w.strip() for w in query_lower.replace(',', ' ').replace('，', ' ').split() if len(w.strip()) > 1]
         
@@ -1222,7 +1222,7 @@ Return a JSON-formatted list of sub-questions."""
                     score += 10
             return score
         
-        # Sort and limit quantity
+        # Sort and apply limit
         active_facts.sort(key=relevance_score, reverse=True)
         historical_facts.sort(key=relevance_score, reverse=True)
         
@@ -1231,7 +1231,7 @@ Return a JSON-formatted list of sub-questions."""
         result.active_count = len(active_facts)
         result.historical_count = len(historical_facts)
         
-        logger.info(f"PanoramaSearch completed: {result.active_count} active, {result.historical_count} historical")
+        logger.info(t("console.panoramaSearchComplete", active=result.active_count, historical=result.historical_count))
         return result
     
     def quick_search(
@@ -1241,24 +1241,24 @@ Return a JSON-formatted list of sub-questions."""
         limit: int = 10
     ) -> SearchResult:
         """
-        [QuickSearch - Quick Search]
-        
+        [QuickSearch - Simple Search]
+
         Fast, lightweight retrieval tool:
         1. Directly calls Zep semantic search
-        2. Returns most relevant results
+        2. Returns the most relevant results
         3. Suitable for simple, direct retrieval needs
-        
+
         Args:
             graph_id: Graph ID
             query: Search query
             limit: Number of results to return
-            
+
         Returns:
-            SearchResult: Search result
+            SearchResult: Search results
         """
-        logger.info(f"QuickSearch quick search: {query[:50]}...")
+        logger.info(t("console.quickSearchStart", query=query[:50]))
         
-        # Directly call existing search_graph method
+        # Directly call the existing search_graph method
         result = self.search_graph(
             graph_id=graph_id,
             query=query,
@@ -1266,7 +1266,7 @@ Return a JSON-formatted list of sub-questions."""
             scope="edges"
         )
         
-        logger.info(f"QuickSearch completed: {result.total_count} results")
+        logger.info(t("console.quickSearchComplete", count=result.total_count))
         return result
     
     def interview_agents(
@@ -1278,35 +1278,35 @@ Return a JSON-formatted list of sub-questions."""
         custom_questions: List[str] = None
     ) -> InterviewResult:
         """
-        [InterviewAgents - Deep Interview]
-        
-        Calls the real OASIS interview API to interview currently running simulation Agents:
-        1. Automatically reads persona files to understand all simulation Agents
-        2. Uses LLM to analyze interview requirements and intelligently select most relevant Agents
-        3. Uses LLM to generate interview questions
-        4. Calls /api/simulation/interview/batch API for real interviews (dual platform simultaneously)
-        5. Integrates all interview results to generate interview report
-        
+        [InterviewAgents - In-depth Interviews]
+
+        Calls the real OASIS interview API to interview agents currently running in the simulation:
+        1. Automatically loads persona files to understand all simulation agents
+        2. Uses an LLM to analyze the interview requirement and intelligently select the most relevant agents
+        3. Uses an LLM to generate interview questions
+        4. Calls the /api/simulation/interview/batch endpoint to conduct real interviews (simultaneously on both platforms)
+        5. Consolidates all interview results and generates an interview report
+
         [Important] This feature requires the simulation environment to be running (OASIS environment not shut down)
-        
-        [Use Cases]
-        - Need to understand event perspectives from different roles
-        - Need to collect multiple opinions and perspectives
-        - Need to get real answers from simulation Agents (not LLM simulation)
-        
+
+        [Use cases]
+        - Need to understand views on an event from different role perspectives
+        - Need to collect opinions and viewpoints from multiple parties
+        - Need to get real responses from simulation agents (not LLM-simulated)
+
         Args:
-            simulation_id: Simulation ID (for locating persona files and calling interview API)
-            interview_requirement: Interview requirement description (unstructured, e.g., "understand students views on the event")
+            simulation_id: Simulation ID (used to locate persona files and call the interview API)
+            interview_requirement: Interview requirement description (unstructured, e.g., "understand students' views on the event")
             simulation_requirement: Simulation requirement background (optional)
-            max_agents: Maximum number of Agents to interview
-            custom_questions: Custom interview questions (optional, auto-generated if not provided)
-            
+            max_agents: Maximum number of agents to interview
+            custom_questions: Custom interview questions (optional; auto-generated if not provided)
+
         Returns:
-            InterviewResult: Interview results
+            InterviewResult: Interview result
         """
         from .simulation_runner import SimulationRunner
         
-        logger.info(f"InterviewAgents deep interview (real API): {interview_requirement[:50]}...")
+        logger.info(t("console.interviewAgentsStart", requirement=interview_requirement[:50]))
         
         result = InterviewResult(
             interview_topic=interview_requirement,
@@ -1317,14 +1317,14 @@ Return a JSON-formatted list of sub-questions."""
         profiles = self._load_agent_profiles(simulation_id)
         
         if not profiles:
-            logger.warning(f"Persona files not found for simulation {simulation_id}")
-            result.summary = "No interviewable Agent persona files found"
+            logger.warning(t("console.profilesNotFound", simId=simulation_id))
+            result.summary = "No interviewable agent persona files found"
             return result
         
         result.total_agents = len(profiles)
-        logger.info(f"Loaded {len(profiles)} Agent personas")
+        logger.info(t("console.loadedProfiles", count=len(profiles)))
         
-        # Step 2: Use LLM to select Agents for interview (return agent_id list)
+        # Step 2: Use the LLM to select agents to interview (returns a list of agent IDs)
         selected_agents, selected_indices, selection_reasoning = self._select_agents_for_interview(
             profiles=profiles,
             interview_requirement=interview_requirement,
@@ -1334,7 +1334,7 @@ Return a JSON-formatted list of sub-questions."""
         
         result.selected_agents = selected_agents
         result.selection_reasoning = selection_reasoning
-        logger.info(f"Selected {len(selected_agents)} Agents for interview: {selected_indices}")
+        logger.info(t("console.selectedAgentsForInterview", count=len(selected_agents), indices=selected_indices))
         
         # Step 3: Generate interview questions (if not provided)
         if not result.interview_questions:
@@ -1343,110 +1343,110 @@ Return a JSON-formatted list of sub-questions."""
                 simulation_requirement=simulation_requirement,
                 selected_agents=selected_agents
             )
-            logger.info(f"Generated {len(result.interview_questions)} interview questions")
+            logger.info(t("console.generatedInterviewQuestions", count=len(result.interview_questions)))
         
-        # Combine questions into a single interview prompt
+        # Combine all questions into a single interview prompt
         combined_prompt = "\n".join([f"{i+1}. {q}" for i, q in enumerate(result.interview_questions)])
-        
-        # Add optimized prefix to constrain Agent response format
+
+        # Add an optimized prefix to constrain the agent's reply format
         INTERVIEW_PROMPT_PREFIX = (
-            "You are being interviewed. Please draw on your persona, all past memories and actions, "
-            "and answer the following questions directly in plain text.\n"
+            "You are being interviewed. Based on your persona, all past memories, and actions, "
+            "please answer the following questions directly in plain text.\n"
             "Response requirements:\n"
-            "1. Answer directly in natural language, do not call any tools\n"
-            "2. Do not return JSON format or tool call format\n"
+            "1. Answer directly in natural language; do not call any tools\n"
+            "2. Do not return JSON format or tool-call format\n"
             "3. Do not use Markdown headings (such as #, ##, ###)\n"
-            "4. Answer each question in order, starting each with Question X: (X is the number)\n"
-            "5. Separate answers with blank lines\n"
-            "6. Each answer should have substantive content, at least 2-3 sentences\n\n"
+            "4. Answer each question one by one by number, starting each answer with \"Question X:\" (X is the question number)\n"
+            "5. Separate answers to different questions with a blank line\n"
+            "6. Answers must be substantive; answer each question with at least 2-3 sentences\n\n"
         )
         optimized_prompt = f"{INTERVIEW_PROMPT_PREFIX}{combined_prompt}"
-        
-        # Step 4: Call real interview API (no platform specified, default dual platform)
+
+        # Step 4: Call the real interview API (no platform specified; defaults to both platforms simultaneously)
         try:
-            # Build batch interview list (no platform specified, dual platform)
+            # Build the batch interview list (no platform specified; dual-platform interview)
             interviews_request = []
             for agent_idx in selected_indices:
                 interviews_request.append({
                     "agent_id": agent_idx,
-                    "prompt": optimized_prompt  # Use optimized prompt
-                    # No platform specified, API will interview on both twitter and reddit
+                    "prompt": optimized_prompt  # Use the optimized prompt
+                    # No platform specified; the API interviews on both twitter and reddit
                 })
             
-            logger.info(f"Calling batch interview API (dual platform): {len(interviews_request)} Agents")
+            logger.info(t("console.callingBatchInterviewApi", count=len(interviews_request)))
             
-            # Call SimulationRunner's batch interview method (no platform, dual platform)
+            # Call SimulationRunner's batch interview method (no platform passed; dual-platform interview)
             api_result = SimulationRunner.interview_agents_batch(
                 simulation_id=simulation_id,
                 interviews=interviews_request,
-                platform=None,  # No platform specified, dual platform interview
-                timeout=180.0   # Dual platform needs longer timeout
+                platform=None,  # No platform specified; dual-platform interview
+                timeout=180.0   # Dual-platform needs a longer timeout
             )
             
-            logger.info(f"Interview API returned: {api_result.get('interviews_count', 0)} results, success={api_result.get('success')}")
+            logger.info(t("console.interviewApiReturned", count=api_result.get('interviews_count', 0), success=api_result.get('success')))
             
-            # Check if API call was successful
+            # Check whether the API call succeeded
             if not api_result.get("success", False):
-                error_msg = api_result.get("error", "Unknown error")
-                logger.warning(f"Interview API returned failure: {error_msg}")
-                result.summary = f"Interview API call failed: {error_msg}. Please check OASIS simulation environment status."
+                error_msg = api_result.get("error", "unknown error")
+                logger.warning(t("console.interviewApiReturnedFailure", error=error_msg))
+                result.summary = f"Interview API call failed: {error_msg}. Please check the OASIS simulation environment status."
                 return result
-            
-            # Step 5: Parse API returned results, build AgentInterview objects
-            # Dual platform mode return format: {"twitter_0": {...}, "reddit_0": {...}, "twitter_1": {...}, ...}
+
+            # Step 5: Parse the API response and build AgentInterview objects
+            # Dual-platform response format: {"twitter_0": {...}, "reddit_0": {...}, "twitter_1": {...}, ...}
             api_data = api_result.get("result", {})
             results_dict = api_data.get("results", {}) if isinstance(api_data, dict) else {}
             
             for i, agent_idx in enumerate(selected_indices):
                 agent = selected_agents[i]
                 agent_name = agent.get("realname", agent.get("username", f"Agent_{agent_idx}"))
-                agent_role = agent.get("profession", "Unknown")
+                agent_role = agent.get("profession", "unknown")
                 agent_bio = agent.get("bio", "")
                 
-                # Get interview results for this Agent on both platforms
+                # Get this agent's interview results for both platforms
                 twitter_result = results_dict.get(f"twitter_{agent_idx}", {})
                 reddit_result = results_dict.get(f"reddit_{agent_idx}", {})
                 
                 twitter_response = twitter_result.get("response", "")
                 reddit_response = reddit_result.get("response", "")
 
-                # Clean possible tool call JSON wrapping
+                # Clean up possible tool-call JSON wrapping
                 twitter_response = self._clean_tool_call_response(twitter_response)
                 reddit_response = self._clean_tool_call_response(reddit_response)
 
-                # Always output dual platform markers
+                # Always output dual-platform markers
                 twitter_text = twitter_response if twitter_response else "(No response received on this platform)"
                 reddit_text = reddit_response if reddit_response else "(No response received on this platform)"
-                response_text = f"[Twitter Platform Response]\n{twitter_text}\n\n[Reddit Platform Response]\n{reddit_text}"
+                response_text = f"[Twitter platform answer]\n{twitter_text}\n\n[Reddit platform answer]\n{reddit_text}"
 
-                # Extract key quotes (from responses on both platforms)
+                # Extract key quotes (from both platforms' answers)
                 import re
                 combined_responses = f"{twitter_response} {reddit_response}"
 
-                # Clean response text: remove markers, numbering, Markdown interference
+                # Clean the response text: remove markers, numbering, Markdown, etc.
                 clean_text = re.sub(r'#{1,6}\s+', '', combined_responses)
                 clean_text = re.sub(r'\{[^}]*tool_name[^}]*\}', '', clean_text)
                 clean_text = re.sub(r'[*_`|>~\-]{2,}', '', clean_text)
-                clean_text = re.sub(r'Question\d+[：:]\s*', '', clean_text)
+                clean_text = re.sub(r'(?:问题|Question)\s*\d+[：:]\s*', '', clean_text)
                 clean_text = re.sub(r'【[^】]+】', '', clean_text)
 
-                # Strategy 1 (primary): Extract complete sentences with substantive content
-                sentences = re.split(r'[。！？]', clean_text)
+                # Strategy 1 (primary): extract complete, substantive sentences
+                sentences = re.split(r'[。！？.!?]', clean_text)
                 meaningful = [
                     s.strip() for s in sentences
                     if 20 <= len(s.strip()) <= 150
                     and not re.match(r'^[\s\W，,；;：:、]+', s.strip())
-                    and not s.strip().startswith(('{', 'Question'))
+                    and not s.strip().startswith(('{', 'Question', '问题'))
                 ]
                 meaningful.sort(key=len, reverse=True)
-                key_quotes = [s + "。" for s in meaningful[:3]]
+                key_quotes = [s + "." for s in meaningful[:3]]
 
-                # Strategy2（supplementary）: properly paired Chinese quotation marks""containing long text
+                # Strategy 2 (supplementary): long text inside properly paired Chinese quotes
                 if not key_quotes:
                     paired = re.findall(r'\u201c([^\u201c\u201d]{15,100})\u201d', clean_text)
                     paired += re.findall(r'\u300c([^\u300c\u300d]{15,100})\u300d', clean_text)
                     key_quotes = [q for q in paired if not re.match(r'^[，,；;：:、]', q)][:3]
-                
+
                 interview = AgentInterview(
                     agent_name=agent_name,
                     agent_role=agent_role,
@@ -1461,16 +1461,16 @@ Return a JSON-formatted list of sub-questions."""
             
         except ValueError as e:
             # Simulation environment not running
-            logger.warning(f"Interview API call failed (environment not running?): {e}")
-            result.summary = f"Interview failed: {str(e)}. Simulation environment may have been shut down, please ensure OASIS environment is running."
+            logger.warning(t("console.interviewApiCallFailed", error=e))
+            result.summary = f"Interview failed: {str(e)}. The simulation environment may be shut down; please ensure the OASIS environment is running."
             return result
         except Exception as e:
-            logger.error(f"Interview API call exception: {e}")
+            logger.error(t("console.interviewApiCallException", error=e))
             import traceback
             logger.error(traceback.format_exc())
-            result.summary = f"Error occurred during interview: {str(e)}"
+            result.summary = f"An error occurred during the interview: {str(e)}"
             return result
-        
+
         # Step 6: Generate interview summary
         if result.interviews:
             result.summary = self._generate_interview_summary(
@@ -1478,12 +1478,12 @@ Return a JSON-formatted list of sub-questions."""
                 interview_requirement=interview_requirement
             )
         
-        logger.info(f"InterviewAgents completed: interviewed {result.interviewed_count} Agents (dual platform)")
+        logger.info(t("console.interviewAgentsComplete", count=result.interviewed_count))
         return result
     
     @staticmethod
     def _clean_tool_call_response(response: str) -> str:
-        """Clean JSON tool call wrapping from Agent response, extract actual content"""
+        """Clean JSON tool-call wrapping from an agent's reply and extract the actual content"""
         if not response or not response.strip().startswith('{'):
             return response
         text = response.strip()
@@ -1503,11 +1503,11 @@ Return a JSON-formatted list of sub-questions."""
         return response
 
     def _load_agent_profiles(self, simulation_id: str) -> List[Dict[str, Any]]:
-        """Load simulation Agent persona files"""
+        """Load agent persona files for the simulation"""
         import os
         import csv
         
-        # Build persona file path
+        # Build the persona file path
         sim_dir = os.path.join(
             os.path.dirname(__file__), 
             f'../../uploads/simulations/{simulation_id}'
@@ -1515,16 +1515,16 @@ Return a JSON-formatted list of sub-questions."""
         
         profiles = []
         
-        # Try reading Reddit JSON format first
+        # Prefer reading Reddit JSON format first
         reddit_profile_path = os.path.join(sim_dir, "reddit_profiles.json")
         if os.path.exists(reddit_profile_path):
             try:
                 with open(reddit_profile_path, 'r', encoding='utf-8') as f:
                     profiles = json.load(f)
-                logger.info(f"Loaded {len(profiles)} personas from reddit_profiles.json")
+                logger.info(t("console.loadedRedditProfiles", count=len(profiles)))
                 return profiles
             except Exception as e:
-                logger.warning(f"Failed to read reddit_profiles.json: {e}")
+                logger.warning(t("console.readRedditProfilesFailed", error=e))
         
         # Try reading Twitter CSV format
         twitter_profile_path = os.path.join(sim_dir, "twitter_profiles.csv")
@@ -1533,18 +1533,18 @@ Return a JSON-formatted list of sub-questions."""
                 with open(twitter_profile_path, 'r', encoding='utf-8') as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        # Convert CSV format to unified format
+                        # Convert CSV format to the unified format
                         profiles.append({
                             "realname": row.get("name", ""),
                             "username": row.get("username", ""),
                             "bio": row.get("description", ""),
                             "persona": row.get("user_char", ""),
-                            "profession": "Unknown"
+                            "profession": "unknown"
                         })
-                logger.info(f"Loaded {len(profiles)} personas from twitter_profiles.csv")
+                logger.info(t("console.loadedTwitterProfiles", count=len(profiles)))
                 return profiles
             except Exception as e:
-                logger.warning(f"Failed to read twitter_profiles.csv: {e}")
+                logger.warning(t("console.readTwitterProfilesFailed", error=e))
         
         return profiles
     
@@ -1556,39 +1556,39 @@ Return a JSON-formatted list of sub-questions."""
         max_agents: int
     ) -> tuple:
         """
-        Use LLM to select Agents for interview
-        
+        Use the LLM to select agents to interview
+
         Returns:
             tuple: (selected_agents, selected_indices, reasoning)
-                - selected_agents: Full info list of selected Agents
-                - selected_indices: Index list of selected Agents (for API calls)
-                - reasoning: Selection reasoning
+                - selected_agents: Full info list of the selected agents
+                - selected_indices: Index list of the selected agents (for API calls)
+                - reasoning: Selection rationale
         """
-        
-        # Build Agent summary list
+
+        # Build the agent summary list
         agent_summaries = []
         for i, profile in enumerate(profiles):
             summary = {
                 "index": i,
                 "name": profile.get("realname", profile.get("username", f"Agent_{i}")),
-                "profession": profile.get("profession", "Unknown"),
+                "profession": profile.get("profession", "unknown"),
                 "bio": profile.get("bio", "")[:200],
                 "interested_topics": profile.get("interested_topics", [])
             }
             agent_summaries.append(summary)
         
-        system_prompt = """You are a professional interview planning expert. Your task is to select the most suitable interviewees from the simulation Agent list based on interview requirements.
+        system_prompt = """You are a professional interview planning expert. Your task is to select the most suitable interview subjects from the list of simulation agents based on the interview requirement.
 
 Selection criteria:
-1. Agent identity/profession is relevant to the interview topic
-2. Agent may hold unique or valuable perspectives
-3. Select diverse viewpoints (e.g., supporters, opponents, neutrals, professionals, etc.)
+1. The agent's identity/profession is relevant to the interview topic
+2. The agent may hold unique or valuable viewpoints
+3. Choose diverse perspectives (e.g., supporters, opponents, neutral parties, professionals)
 4. Prioritize roles directly related to the event
 
 Return JSON format:
 {
-    "selected_indices": [list of selected Agent indices],
-    "reasoning": "Explanation of selection reasoning"
+    "selected_indices": [list of selected agent indices],
+    "reasoning": "Explanation of the selection rationale"
 }"""
 
         user_prompt = f"""Interview requirement:
@@ -1597,10 +1597,10 @@ Return JSON format:
 Simulation background:
 {simulation_requirement if simulation_requirement else "Not provided"}
 
-Available Agent list ({len(agent_summaries)} total):
+Available agents ({len(agent_summaries)} total):
 {json.dumps(agent_summaries, ensure_ascii=False, indent=2)}
 
-Please select up to {max_agents} Agents most suitable for interview and explain the selection reasoning."""
+Please select up to {max_agents} agents most suitable for interviewing, and explain the rationale."""
 
         try:
             response = self.llm.chat_json(
@@ -1613,8 +1613,8 @@ Please select up to {max_agents} Agents most suitable for interview and explain 
             
             selected_indices = response.get("selected_indices", [])[:max_agents]
             reasoning = response.get("reasoning", "Automatically selected based on relevance")
-            
-            # Get full information of selected Agents
+
+            # Get full info for the selected agents
             selected_agents = []
             valid_indices = []
             for idx in selected_indices:
@@ -1625,8 +1625,8 @@ Please select up to {max_agents} Agents most suitable for interview and explain 
             return selected_agents, valid_indices, reasoning
             
         except Exception as e:
-            logger.warning(f"LLM Agent selection failed, using default selection: {e}")
-            # Fallback: select first N
+            logger.warning(t("console.llmSelectAgentFailed", error=e))
+            # Fallback: select the first N
             selected = profiles[:max_agents]
             indices = list(range(min(max_agents, len(profiles))))
             return selected, indices, "Using default selection strategy"
@@ -1637,27 +1637,27 @@ Please select up to {max_agents} Agents most suitable for interview and explain 
         simulation_requirement: str,
         selected_agents: List[Dict[str, Any]]
     ) -> List[str]:
-        """Generate interview questions using LLM"""
+        """Use an LLM to generate interview questions"""
         
-        agent_roles = [a.get("profession", "Unknown") for a in selected_agents]
+        agent_roles = [a.get("profession", "unknown") for a in selected_agents]
         
-        system_prompt = """You are a professional journalist/interviewer. Based on interview requirements, generate 3-5 in-depth interview questions.
+        system_prompt = """You are a professional journalist/interviewer. Based on the interview requirement, generate 3-5 in-depth interview questions.
 
 Question requirements:
-1. Open-ended questions that encourage detailed answers
+1. Open-ended questions that encourage detailed responses
 2. Questions that may elicit different answers from different roles
-3. Cover multiple dimensions including facts, opinions, feelings, etc.
-4. Natural language, like a real interview
-5. Keep each question concise, under 50 words
-6. Ask directly, do not include background or prefixes
+3. Cover multiple dimensions including facts, opinions, and feelings
+4. Natural wording, like a real interview
+5. Keep each question concise and clear (under roughly 50 words)
+6. Ask directly; do not include background explanations or prefixes
 
-Return JSON format: {"questions": ["question 1", "question 2", ...]}"""
+Return JSON format: {"questions": ["question_1", "question_2", ...]}"""
 
         user_prompt = f"""Interview requirement: {interview_requirement}
 
 Simulation background: {simulation_requirement if simulation_requirement else "Not provided"}
 
-Interviewee roles: {', '.join(agent_roles)}
+Roles of interviewees: {', '.join(agent_roles)}
 
 Please generate 3-5 interview questions."""
 
@@ -1670,12 +1670,12 @@ Please generate 3-5 interview questions."""
                 temperature=0.5
             )
             
-            return response.get("questions", [f"What are your views on {interview_requirement}?"])
-            
+            return response.get("questions", [f"What are your thoughts on {interview_requirement}?"])
+
         except Exception as e:
-            logger.warning(f"Failed to generate interview questions: {e}")
+            logger.warning(t("console.generateInterviewQuestionsFailed", error=e))
             return [
-                f"What is your perspective on {interview_requirement}?",
+                f"What is your view on {interview_requirement}?",
                 "What impact does this have on you or the group you represent?",
                 "How do you think this issue should be resolved or improved?"
             ]
@@ -1685,38 +1685,39 @@ Please generate 3-5 interview questions."""
         interviews: List[AgentInterview],
         interview_requirement: str
     ) -> str:
-        """Generate interview summary"""
-        
+        """Generate an interview summary"""
+
         if not interviews:
-            return "No interviews completed"
-        
+            return "No interviews were completed"
+
         # Collect all interview content
         interview_texts = []
         for interview in interviews:
             interview_texts.append(f"[{interview.agent_name} ({interview.agent_role})]\n{interview.response[:500]}")
-        
-        system_prompt = """You are a professional news editor. Based on the responses from multiple interviewees, generate an interview summary.
+
+        quote_instruction = "When quoting interviewees' original words, use Chinese corner brackets \u300c\u300d" if get_locale() == 'zh' else 'Use quotation marks "" when quoting interviewees'
+        system_prompt = f"""You are a professional news editor. Based on the responses from multiple interviewees, generate an interview summary.
 
 Summary requirements:
-1. Extract main viewpoints from all parties
-2. Identify consensus and disagreements
-3. Highlight valuable quotes
-4. Be objective and neutral, not favoring any party
+1. Distill the main viewpoints of each party
+2. Highlight points of consensus and divergence
+3. Emphasize valuable quotes
+4. Remain objective and neutral, not favoring any side
 5. Keep within 1000 words
 
-Format constraints (must follow):
-- Use plain text paragraphs, separate sections with blank lines
+Format constraints (must be followed):
+- Use plain-text paragraphs, separated by blank lines
 - Do not use Markdown headings (such as #, ##, ###)
-- Do not use separator lines (such as ---, ***)
-- Use quotation marks when quoting interviewee statements
-- You may use **bold** to mark keywords, but do not use other Markdown syntax"""
+- Do not use horizontal rules (such as ---, ***)
+- {quote_instruction}
+- You may use **bold** to highlight keywords, but do not use any other Markdown syntax"""
 
         user_prompt = f"""Interview topic: {interview_requirement}
 
 Interview content:
 {"".join(interview_texts)}
 
-Please generate an interview summary."""
+Please generate the interview summary."""
 
         try:
             summary = self.llm.chat(
@@ -1730,6 +1731,6 @@ Please generate an interview summary."""
             return summary
             
         except Exception as e:
-            logger.warning(f"Failed to generate interview summary: {e}")
+            logger.warning(t("console.generateInterviewSummaryFailed", error=e))
             # Fallback: simple concatenation
-            return f"Interviewed {len(interviews)} respondents, including: " + ", ".join([i.agent_name for i in interviews])
+            return f"Interviewed {len(interviews)} respondents in total, including: " + ", ".join([i.agent_name for i in interviews])

@@ -4,7 +4,7 @@
     :class="{ 'no-projects': projects.length === 0 && !loading }"
     ref="historyContainer"
   >
-    <!-- Background decoration: tech grid (shown only when projects exist) -->
+    <!-- Background decoration: technical grid lines (only shown when there are projects) -->
     <div v-if="projects.length > 0 || loading" class="tech-grid-bg">
       <div class="grid-pattern"></div>
       <div class="gradient-overlay"></div>
@@ -13,11 +13,11 @@
     <!-- Title area -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">Prediction History</span>
+      <span class="section-title">{{ $t('history.title') }}</span>
       <div class="section-line"></div>
     </div>
 
-    <!-- Card container (shown only when projects exist) -->
+    <!-- Card container (only shown when there are projects) -->
     <div v-if="projects.length > 0" class="cards-container" :class="{ expanded: isExpanded }" :style="containerStyle">
       <div 
         v-for="(project, index) in projects" 
@@ -29,23 +29,23 @@
         @mouseleave="hoveringCard = null"
         @click="navigateToProject(project)"
       >
-        <!-- Card header: simulation_id and feature availability -->
+        <!-- Card header: simulation_id and feature-availability status -->
         <div class="card-header">
           <span class="card-id">{{ formatSimulationId(project.simulation_id) }}</span>
           <div class="card-status-icons">
             <span 
               class="status-icon" 
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="Graph Building"
+              :title="$t('history.graphBuild')"
             >◇</span>
             <span 
               class="status-icon available" 
-              title="Environment Setup"
+              :title="$t('history.envSetup')"
             >◈</span>
             <span 
               class="status-icon" 
               :class="{ available: project.report_id, unavailable: !project.report_id }"
-              title="Analysis Report"
+              :title="$t('history.analysisReport')"
             >◆</span>
           </div>
         </div>
@@ -54,7 +54,7 @@
         <div class="card-files-wrapper">
           <!-- Corner decoration - viewfinder style -->
           <div class="corner-mark top-left-only"></div>
-          
+
           <!-- File list -->
           <div class="files-list" v-if="project.files && project.files.length > 0">
             <div 
@@ -65,19 +65,19 @@
               <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
               <span class="file-name">{{ truncateFilename(file.filename, 20) }}</span>
             </div>
-            <!-- Show hint if more files -->
+            <!-- If more files exist, show a hint -->
             <div v-if="project.files.length > 3" class="files-more">
-              +{{ project.files.length - 3 }} files
+              {{ $t('history.moreFiles', { count: project.files.length - 3 }) }}
             </div>
           </div>
-          <!-- Placeholder when no files -->
+          <!-- Placeholder when there are no files -->
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">No files</span>
+            <span class="empty-file-text">{{ $t('history.noFiles') }}</span>
           </div>
         </div>
 
-        <!-- Card title (first 20 chars of simulation requirement) -->
+        <!-- Card title (uses the first 20 characters of the simulation requirement) -->
         <h3 class="card-title">{{ getSimulationTitle(project.simulation_requirement) }}</h3>
 
         <!-- Card description (full simulation requirement) -->
@@ -102,7 +102,7 @@
     <!-- Loading state -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">Loading...</span>
+      <span class="loading-text">{{ $t('history.loadingText') }}</span>
     </div>
 
     <!-- History replay detail modal -->
@@ -122,31 +122,31 @@
               <button class="modal-close" @click="closeModal">×</button>
             </div>
 
-            <!-- Modal content -->
+            <!-- Modal body -->
             <div class="modal-body">
               <!-- Simulation requirement -->
               <div class="modal-section">
-                <div class="modal-label">Simulation Requirement</div>
-                <div class="modal-requirement">{{ selectedProject.simulation_requirement || 'None' }}</div>
+                <div class="modal-label">{{ $t('history.simRequirement') }}</div>
+                <div class="modal-requirement">{{ selectedProject.simulation_requirement || $t('common.none') }}</div>
               </div>
 
               <!-- File list -->
               <div class="modal-section">
-                <div class="modal-label">Associated Files</div>
+                <div class="modal-label">{{ $t('history.relatedFiles') }}</div>
                 <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
                   <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
                     <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
                     <span class="modal-file-name">{{ file.filename }}</span>
                   </div>
                 </div>
-                <div class="modal-empty" v-else>No associated files</div>
+                <div class="modal-empty" v-else>{{ $t('history.noRelatedFiles') }}</div>
               </div>
             </div>
 
-            <!-- Prediction replay divider -->
+            <!-- Replay section divider -->
             <div class="modal-divider">
               <span class="divider-line"></span>
-              <span class="divider-text">Prediction Replay</span>
+              <span class="divider-text">{{ $t('history.replayTitle') }}</span>
               <span class="divider-line"></span>
             </div>
 
@@ -159,7 +159,7 @@
               >
                 <span class="btn-step">Step1</span>
                 <span class="btn-icon">◇</span>
-                <span class="btn-text">Graph Building</span>
+                <span class="btn-text">{{ $t('history.step1Button') }}</span>
               </button>
               <button 
                 class="modal-btn btn-simulation" 
@@ -167,7 +167,7 @@
               >
                 <span class="btn-step">Step2</span>
                 <span class="btn-icon">◈</span>
-                <span class="btn-text">Environment Setup</span>
+                <span class="btn-text">{{ $t('history.step2Button') }}</span>
               </button>
               <button 
                 class="modal-btn btn-report" 
@@ -176,12 +176,12 @@
               >
                 <span class="btn-step">Step4</span>
                 <span class="btn-icon">◆</span>
-                <span class="btn-text">Analysis Report</span>
+                <span class="btn-text">{{ $t('history.step4Button') }}</span>
               </button>
             </div>
-            <!-- Non-replayable hint -->
+            <!-- Not-replayable hint -->
             <div class="modal-playback-hint">
-              <span class="hint-text">Step3 "Run Simulation" and Step5 "Deep Interaction" must be launched during runtime and do not support history replay</span>
+              <span class="hint-text">{{ $t('history.replayHint') }}</span>
             </div>
           </div>
         </div>
@@ -193,10 +193,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getSimulationHistory } from '../api/simulation'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // State
 const projects = ref([])
@@ -204,33 +206,33 @@ const loading = ref(true)
 const isExpanded = ref(false)
 const hoveringCard = ref(null)
 const historyContainer = ref(null)
-const selectedProject = ref(null)  // Currently selected project (for modal)
+const selectedProject = ref(null)  // Currently selected project (used by the modal)
 let observer = null
-let isAnimating = false  // Animation lock to prevent flickering
+let isAnimating = false  // Animation lock to prevent flicker
 let expandDebounceTimer = null  // Debounce timer
-let pendingState = null  // Record pending target state
+let pendingState = null  // Pending target state to execute
 
-// Card layout config - adjusted for wider ratio
+// Card layout config - adjusted to a wider aspect ratio
 const CARDS_PER_ROW = 4
 const CARD_WIDTH = 280  
 const CARD_HEIGHT = 280 
 const CARD_GAP = 24
 
-// Dynamically calculate container height style
+// Dynamically compute container height style
 const containerStyle = computed(() => {
   if (!isExpanded.value) {
-    // Collapsed: fixed height
+    // Collapsed state: fixed height
     return { minHeight: '420px' }
   }
-  
-  // Expanded: dynamically calculate height based on card count
+
+  // Expanded state: compute height dynamically from card count
   const total = projects.value.length
   if (total === 0) {
     return { minHeight: '280px' }
   }
   
   const rows = Math.ceil(total / CARDS_PER_ROW)
-  // Calculate actual height needed: rows * card height + (rows-1) * gap + small bottom padding
+  // Compute the actual required height: rows * card height + (rows - 1) * gap + small bottom padding
   const expandedHeight = rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + 10
   
   return { minHeight: `${expandedHeight}px` }
@@ -239,15 +241,15 @@ const containerStyle = computed(() => {
 // Get card style
 const getCardStyle = (index) => {
   const total = projects.value.length
-  
+
   if (isExpanded.value) {
-    // Expanded: grid layout
+    // Expanded state: grid layout
     const transition = 'transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.3s ease'
 
     const col = index % CARDS_PER_ROW
     const row = Math.floor(index / CARDS_PER_ROW)
     
-    // Calculate cards in current row, ensure centering
+    // Compute the card count of the current row so each row stays centered
     const currentRowStart = row * CARDS_PER_ROW
     const currentRowCards = Math.min(CARDS_PER_ROW, total - currentRowStart)
     
@@ -257,7 +259,7 @@ const getCardStyle = (index) => {
     const colInRow = index % CARDS_PER_ROW
     const x = startX + colInRow * (CARD_WIDTH + CARD_GAP)
     
-    // Expand downward, increase spacing from title
+    // Expand downward and add extra spacing from the title
     const y = 20 + row * (CARD_HEIGHT + CARD_GAP)
 
     return {
@@ -267,14 +269,14 @@ const getCardStyle = (index) => {
       transition: transition
     }
   } else {
-    // Collapsed: fan-stacked
+    // Collapsed state: fan-shaped stack
     const transition = 'transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.3s ease'
 
     const centerIndex = (total - 1) / 2
     const offset = index - centerIndex
     
     const x = offset * 35
-    // Adjust starting position, close to title with appropriate spacing
+    // Adjust starting position so it sits near the title but keeps appropriate spacing
     const y = 25 + Math.abs(offset) * 8
     const r = offset * 3
     const s = 0.95 - Math.abs(offset) * 0.05
@@ -292,7 +294,7 @@ const getCardStyle = (index) => {
 const getProgressClass = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  
+
   if (total === 0 || current === 0) {
     // Not started
     return 'not-started'
@@ -316,7 +318,7 @@ const formatDate = (dateStr) => {
   }
 }
 
-// Format time (hours:minutes)
+// Format time (shows HH:MM)
 const formatTime = (dateStr) => {
   if (!dateStr) return ''
   try {
@@ -335,29 +337,29 @@ const truncateText = (text, maxLength) => {
   return text.length > maxLength ? text.slice(0, maxLength) + '...' : text
 }
 
-// Generate title from simulation requirement (first 20 chars)
+// Build a title from the simulation requirement (first 20 chars)
 const getSimulationTitle = (requirement) => {
-  if (!requirement) return 'Unnamed Simulation'
+  if (!requirement) return t('history.untitledSimulation')
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
 
-// Format simulation_id display (first 6 chars)
+// Format the simulation_id for display (first 6 chars)
 const formatSimulationId = (simulationId) => {
   if (!simulationId) return 'SIM_UNKNOWN'
   const prefix = simulationId.replace('sim_', '').slice(0, 6)
   return `SIM_${prefix.toUpperCase()}`
 }
 
-// Format rounds display (current/total)
+// Format rounds display (current round / total rounds)
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  if (total === 0) return 'Not Started'
-  return `${current}/${total} rounds`
+  if (total === 0) return t('history.notStarted')
+  return t('history.roundsProgress', { current, total })
 }
 
-// Get file type (for styling)
+// Get the file type (used for styling)
 const getFileType = (filename) => {
   if (!filename) return 'other'
   const ext = filename.split('.').pop()?.toLowerCase()
@@ -373,16 +375,16 @@ const getFileType = (filename) => {
   return typeMap[ext] || 'other'
 }
 
-// Get file type label text
+// Get the file-type label text
 const getFileTypeLabel = (filename) => {
   if (!filename) return 'FILE'
   const ext = filename.split('.').pop()?.toUpperCase()
   return ext || 'FILE'
 }
 
-// Truncate filename (preserve extension)
+// Truncate a filename (preserving the extension)
 const truncateFilename = (filename, maxLength) => {
-  if (!filename) return 'Unknown file'
+  if (!filename) return t('history.unknownFile')
   if (filename.length <= maxLength) return filename
   
   const ext = filename.includes('.') ? '.' + filename.split('.').pop() : ''
@@ -391,17 +393,17 @@ const truncateFilename = (filename, maxLength) => {
   return truncatedName + ext
 }
 
-// Open project detail modal
+// Open the project detail modal
 const navigateToProject = (simulation) => {
   selectedProject.value = simulation
 }
 
-// Close modal
+// Close the modal
 const closeModal = () => {
   selectedProject.value = null
 }
 
-// Navigate to Graph Building page (Project)
+// Navigate to the graph-build page (Project)
 const goToProject = () => {
   if (selectedProject.value?.project_id) {
     router.push({
@@ -412,7 +414,7 @@ const goToProject = () => {
   }
 }
 
-// Navigate to Environment Setup page (Simulation)
+// Navigate to the environment-config page (Simulation)
 const goToSimulation = () => {
   if (selectedProject.value?.simulation_id) {
     router.push({
@@ -423,7 +425,7 @@ const goToSimulation = () => {
   }
 }
 
-// Navigate to Analysis Report page (Report)
+// Navigate to the analysis-report page (Report)
 const goToReport = () => {
   if (selectedProject.value?.report_id) {
     router.push({
@@ -434,7 +436,7 @@ const goToReport = () => {
   }
 }
 
-// Load history projects
+// Load historical projects
 const loadHistory = async () => {
   try {
     loading.value = true
@@ -443,7 +445,7 @@ const loadHistory = async () => {
       projects.value = response.data || []
     }
   } catch (error) {
-    console.error('Failed to load history projects:', error)
+    console.error('Failed to load historical projects:', error)
     projects.value = []
   } finally {
     loading.value = false
@@ -461,47 +463,47 @@ const initObserver = () => {
       entries.forEach((entry) => {
         const shouldExpand = entry.isIntersecting
         
-        // Update pending target state (record latest target state regardless of animation)
+        // Update pending target state (always record the latest target state, even during animation)
         pendingState = shouldExpand
-        
-        // Clear previous debounce timer (new scroll intent overrides old)
+
+        // Clear the previous debounce timer (new scroll intent overrides the old one)
         if (expandDebounceTimer) {
           clearTimeout(expandDebounceTimer)
           expandDebounceTimer = null
         }
         
-        // If animating, just record state and handle after animation
+        // If currently animating, just record the state and handle after animation ends
         if (isAnimating) return
-        
-        // If target state equals current state, no action needed
+
+        // If the target state matches the current state, no action needed
         if (shouldExpand === isExpanded.value) {
           pendingState = null
           return
         }
         
-        // Use debounced state transition to prevent rapid flickering
-        // Shorter delay for expand (50ms), longer for collapse (200ms) for stability
+        // Debounce the state transition to prevent rapid flicker
+        // Shorter delay (50ms) when expanding, longer (200ms) when collapsing for stability
         const delay = shouldExpand ? 50 : 200
         
         expandDebounceTimer = setTimeout(() => {
-          // Check if animating
+          // Check whether we're currently animating
           if (isAnimating) return
-          
-          // Check if pending state still needs execution (may be overridden by later scroll)
+
+          // Check whether the pending state still needs to execute (may have been overridden by later scroll)
           if (pendingState === null || pendingState === isExpanded.value) return
-          
-          // Set animation lock
+
+          // Set the animation lock
           isAnimating = true
           isExpanded.value = pendingState
           pendingState = null
           
-          // Unlock after animation and check for pending state changes
+          // After the animation completes, release the lock and check for pending state changes
           setTimeout(() => {
             isAnimating = false
-            
-            // After animation ends, check for new pending state
+
+            // After animation ends, check whether there is a new pending state
             if (pendingState !== null && pendingState !== isExpanded.value) {
-              // Small delay before executing to avoid rapid switching
+              // Wait a brief moment before executing to avoid switching too fast
               expandDebounceTimer = setTimeout(() => {
                 if (pendingState !== null && pendingState !== isExpanded.value) {
                   isAnimating = true
@@ -520,18 +522,18 @@ const initObserver = () => {
     {
       // Use multiple thresholds for smoother detection
       threshold: [0.4, 0.6, 0.8],
-      // Adjust rootMargin, shrink viewport bottom upward, require more scrolling to trigger expand
+      // Adjust rootMargin so the viewport bottom shrinks upward, requiring more scroll to trigger expansion
       rootMargin: '0px 0px -150px 0px'
     }
   )
   
-  // Start observing
+  // Begin observing
   if (historyContainer.value) {
     observer.observe(historyContainer.value)
   }
 }
 
-// Watch route changes, reload data when returning to homepage
+// Watch route changes; reload data when returning to the home page
 watch(() => route.path, (newPath) => {
   if (newPath === '/') {
     loadHistory()
@@ -539,17 +541,17 @@ watch(() => route.path, (newPath) => {
 })
 
 onMounted(async () => {
-  // Ensure DOM rendering is complete before loading data
+  // Ensure the DOM has rendered before loading data
   await nextTick()
   await loadHistory()
   
-  // Initialize observer after DOM rendering
+  // Initialize the observer after the DOM has rendered
   setTimeout(() => {
     initObserver()
   }, 100)
 })
 
-// If using keep-alive, reload data on component activation
+// If keep-alive is used, reload data when the component is activated
 onActivated(() => {
   loadHistory()
 })
@@ -560,7 +562,7 @@ onUnmounted(() => {
     observer.disconnect()
     observer = null
   }
-  // Clean up debounce timer
+  // Clear the debounce timer
   if (expandDebounceTimer) {
     clearTimeout(expandDebounceTimer)
     expandDebounceTimer = null
@@ -579,13 +581,13 @@ onUnmounted(() => {
   overflow: visible;
 }
 
-/* Simplified display when no projects */
+/* Simplified display when there are no projects */
 .history-database.no-projects {
   min-height: auto;
   padding: 40px 0 20px;
 }
 
-/* Tech grid background */
+/* Technical grid background */
 .tech-grid-bg {
   position: absolute;
   top: 0;
@@ -596,7 +598,7 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* Use CSS background patterns to create fixed-spacing square grid */
+/* Use CSS background patterns to create a fixed-spacing square grid */
 .grid-pattern {
   position: absolute;
   top: 0;
@@ -607,7 +609,7 @@ onUnmounted(() => {
     linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
-  /* Position from top-left, height changes only expand at bottom without affecting existing grid */
+  /* Anchor from the top-left so height changes extend only at the bottom without shifting existing grid positions */
   background-position: top left;
 }
 
@@ -651,7 +653,7 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
-/* Cards container */
+/* Card container */
 .cards-container {
   position: relative;
   display: flex;
@@ -659,7 +661,7 @@ onUnmounted(() => {
   align-items: flex-start;
   padding: 0 40px;
   transition: min-height 700ms cubic-bezier(0.23, 1, 0.32, 1);
-  /* min-height dynamically calculated by JS based on card count */
+  /* min-height is computed dynamically by JS based on card count */
 }
 
 /* Project card */
@@ -703,7 +705,7 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* Feature status icon group */
+/* Feature-status icon group */
 .card-status-icons {
   display: flex;
   align-items: center;
@@ -720,10 +722,10 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* Colors for different features */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* Graph Building - blue */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* Environment Setup - orange */
-.status-icon:nth-child(3).available { color: #10B981; } /* Analysis Report - green */
+/* Colors per feature */
+.status-icon:nth-child(1).available { color: #3B82F6; } /* Graph build - blue */
+.status-icon:nth-child(2).available { color: #F59E0B; } /* Environment setup - orange */
+.status-icon:nth-child(3).available { color: #10B981; } /* Analysis report - green */
 
 .status-icon.unavailable {
   color: #D1D5DB;
@@ -770,7 +772,7 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-/* More files hint */
+/* "More files" hint */
 .files-more {
   display: flex;
   align-items: center;
@@ -818,7 +820,7 @@ onUnmounted(() => {
   min-width: 28px;
 }
 
-/* Low saturation color scheme - Morandi palette */
+/* Low-saturation color scheme - Morandi palette */
 .file-tag.pdf { background: #f2e6e6; color: #a65a5a; }
 .file-tag.doc { background: #e6eff5; color: #5a7ea6; }
 .file-tag.xls { background: #e6f2e8; color: #5aa668; }
@@ -839,7 +841,7 @@ onUnmounted(() => {
   letter-spacing: 0.1px;
 }
 
-/* Placeholder when no files */
+/* Placeholder when there are no files */
 .files-empty {
   display: flex;
   align-items: center;
@@ -860,7 +862,7 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
 }
 
-/* File area hover effect */
+/* Hover effect on file area */
 .project-card:hover .card-files-wrapper {
   border-color: #d1d5db;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
@@ -925,14 +927,14 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* Date-time combination */
+/* Date and time combo */
 .card-datetime {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Bottom rounds progress display */
+/* Footer rounds progress display */
 .card-footer .card-progress {
   display: flex;
   align-items: center;
@@ -946,7 +948,7 @@ onUnmounted(() => {
   font-size: 0.5rem;
 }
 
-/* Progress status colors - bottom */
+/* Progress status colors - footer */
 .card-footer .card-progress.completed { color: #10B981; }
 .card-footer .card-progress.in-progress { color: #F59E0B; }
 .card-footer .card-progress.not-started { color: #9CA3AF; }
@@ -1133,7 +1135,7 @@ onUnmounted(() => {
   color: #111827;
 }
 
-/* Modal content */
+/* Modal body */
 .modal-body {
   padding: 24px 32px;
 }
@@ -1229,7 +1231,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* Prediction replay divider */
+/* Replay section divider */
 .modal-divider {
   display: flex;
   align-items: center;
@@ -1320,7 +1322,7 @@ onUnmounted(() => {
   color: #111827;
 }
 
-/* Non-replayable hint */
+/* Not-replayable hint */
 .modal-playback-hint {
   display: flex;
   align-items: center;

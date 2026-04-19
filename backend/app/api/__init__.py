@@ -1,5 +1,5 @@
 """
-API routing module
+API routes module
 """
 
 from flask import Blueprint

@@ -58,7 +58,7 @@
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
                   </div>
-                  <span class="loading-text">Generating {{ section.title }}...</span>
+                  <span class="loading-text">{{ $t('step4.generatingSection', { title: section.title }) }}</span>
                 </div>
               </div>
             </div>
@@ -129,7 +129,7 @@
 
           <!-- Next Step Button - shown after completion -->
           <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
-            <span>Enter Deep Interaction</span>
+            <span>{{ $t('step4.goToInteraction') }}</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -194,7 +194,7 @@
                     </div>
                   </template>
                   
-                  <!-- Section Content Generated (content ready, but section may not be fully complete) -->
+                  <!-- Section Content Generated (content is ready, but the whole section may not be complete yet) -->
                   <template v-if="log.action === 'section_content'">
                     <div class="section-tag content-ready">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -205,7 +205,7 @@
                     </div>
                   </template>
 
-                  <!-- Section Complete -->
+                  <!-- Section Complete (section generation finished) -->
                   <template v-if="log.action === 'section_complete'">
                     <div class="section-tag completed">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -315,7 +315,7 @@
                         Final: {{ log.details?.has_final_answer ? 'Yes' : 'No' }}
                       </span>
                     </div>
-                    <!-- When it is the final answer, show special hint -->
+                    <!-- When it's the final answer, show a special hint -->
                     <div v-if="log.details?.has_final_answer" class="final-answer-hint">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"></polyline>
@@ -392,9 +392,11 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getAgentLog, getConsoleLog } from '../api/report'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const props = defineProps({
   reportId: String,
@@ -431,21 +433,21 @@ const showRawResult = reactive({})
 
 // Toggle functions
 const toggleRawResult = (timestamp, event) => {
-  // Save button position relative to viewport
+  // Save the button's position relative to the viewport
   const button = event?.target
   const buttonRect = button?.getBoundingClientRect()
   const buttonTopBeforeToggle = buttonRect?.top
-  
+
   // Toggle state
   showRawResult[timestamp] = !showRawResult[timestamp]
-  
-  // After DOM update, adjust scroll to keep button at same position
+
+  // After the DOM updates, adjust scroll position to keep the button in the same place
   if (button && buttonTopBeforeToggle !== undefined && rightPanel.value) {
     nextTick(() => {
       const newButtonRect = button.getBoundingClientRect()
       const buttonTopAfterToggle = newButtonRect.top
       const scrollDelta = buttonTopAfterToggle - buttonTopBeforeToggle
-      
+
       // Adjust scroll position
       rightPanel.value.scrollTop += scrollDelta
     })
@@ -512,7 +514,7 @@ const toolConfig = {
   'quick_search': {
     name: 'Quick Search',
     color: 'orange',
-    icon: 'zap' // Lightning icon - represents speed
+    icon: 'zap' // Zap icon - represents speed
   },
   'get_graph_statistics': {
     name: 'Graph Stats',
@@ -552,30 +554,30 @@ const parseInsightForge = (text) => {
   
   try {
     // Extract analysis question
-    const queryMatch = text.match(/Analysis question:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Analysis Question:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
-    
+
     // Extract prediction scenario
-    const reqMatch = text.match(/Prediction scenario:\s*(.+?)(?:\n|$)/)
+    const reqMatch = text.match(/Prediction Scenario:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
-    
-    // Extract statistics - match format
-    const factMatch = text.match(/Related prediction facts:\s*(\d+)/)
-    const entityMatch = text.match(/Entities involved:\s*(\d+)/)
-    const relMatch = text.match(/Relationship chains:\s*(\d+)/)
+
+    // Extract stats - matches the "Related Predicted Facts: X" format
+    const factMatch = text.match(/Related Predicted Facts:\s*(\d+)/)
+    const entityMatch = text.match(/Involved Entities:\s*(\d+)/)
+    const relMatch = text.match(/Relation Chains:\s*(\d+)/)
     if (factMatch) result.stats.facts = parseInt(factMatch[1])
     if (entityMatch) result.stats.entities = parseInt(entityMatch[1])
     if (relMatch) result.stats.relationships = parseInt(relMatch[1])
-    
-    // Extract sub-questions - full extraction, no limit
-    const subQSection = text.match(/### Analysis Sub-questions\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract sub-questions - full extraction, no count limit
+    const subQSection = text.match(/### Analyzed Sub-Questions\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
-    
-    // Extract key facts - full extraction, no limit
-    const factsSection = text.match(/### [Key Facts][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract key facts - full extraction, no count limit
+    const factsSection = text.match(/### \[Key Facts\][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => {
@@ -583,9 +585,9 @@ const parseInsightForge = (text) => {
         return match ? match[1].replace(/^"|"$/g, '').trim() : l.replace(/^\d+\.\s*/, '').trim()
       }).filter(Boolean)
     }
-    
-    // Extract core entities - full extraction, including summary and related fact count
-    const entitySection = text.match(/### [Core Entities]\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract core entities - full extraction, including summary and related-fact count
+    const entitySection = text.match(/### \[Core Entities\]\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const entityText = entitySection[1]
       // Split entity blocks by "- **"
@@ -593,7 +595,7 @@ const parseInsightForge = (text) => {
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
         const summaryMatch = block.match(/Summary:\s*"?(.+?)"?(?:\n|$)/)
-        const relatedMatch = block.match(/Related facts:\s*(\d+)/)
+        const relatedMatch = block.match(/Related Facts:\s*(\d+)/)
         return {
           name: nameMatch ? nameMatch[1].trim() : '',
           type: nameMatch ? nameMatch[2].trim() : '',
@@ -602,9 +604,9 @@ const parseInsightForge = (text) => {
         }
       }).filter(e => e.name)
     }
-    
-    // Extract relationship chains - full extraction, no limit
-    const relSection = text.match(/### [Relationship Chains]\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract relation chains - full extraction, no count limit
+    const relSection = text.match(/### \[Relation Chains\]\n([\s\S]*?)(?=\n###|$)/)
     if (relSection) {
       const lines = relSection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.relations = lines.map(l => {
@@ -635,30 +637,30 @@ const parsePanorama = (text) => {
     // Extract query
     const queryMatch = text.match(/Query:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
-    
-    // Extract statistics
-    const nodesMatch = text.match(/Total nodes:\s*(\d+)/)
-    const edgesMatch = text.match(/Total edges:\s*(\d+)/)
-    const activeMatch = text.match(/Current valid facts:\s*(\d+)/)
-    const histMatch = text.match(/Historical/expired facts:\s*(\d+)/)
+
+    // Extract stats
+    const nodesMatch = text.match(/Total Nodes:\s*(\d+)/)
+    const edgesMatch = text.match(/Total Edges:\s*(\d+)/)
+    const activeMatch = text.match(/Active Facts:\s*(\d+)/)
+    const histMatch = text.match(/Historical\/Expired Facts:\s*(\d+)/)
     if (nodesMatch) result.stats.nodes = parseInt(nodesMatch[1])
     if (edgesMatch) result.stats.edges = parseInt(edgesMatch[1])
     if (activeMatch) result.stats.activeFacts = parseInt(activeMatch[1])
     if (histMatch) result.stats.historicalFacts = parseInt(histMatch[1])
-    
-    // Extract current valid facts - full extraction, no limit
-    const activeSection = text.match(/### [Current Valid Facts][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract active facts - full extraction, no count limit
+    const activeSection = text.match(/### \[Active Facts\][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (activeSection) {
       const lines = activeSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.activeFacts = lines.map(l => {
-        // Remove numbering and quotes
+        // Strip numbering and quotes
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
       }).filter(Boolean)
     }
-    
-    // Extract historical/expired facts - full extraction, no limit
-    const histSection = text.match(/### 【Historical/expired facts】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract historical/expired facts - full extraction, no count limit
+    const histSection = text.match(/### \[Historical\/Expired Facts\][\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (histSection) {
       const lines = histSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.historicalFacts = lines.map(l => {
@@ -666,9 +668,9 @@ const parsePanorama = (text) => {
         return factText
       }).filter(Boolean)
     }
-    
-    // Extract involved entities - full extraction, no limit
-    const entitySection = text.match(/### [Involved Entities]\n([\s\S]*?)(?=\n###|$)/)
+
+    // Extract involved entities - full extraction, no count limit
+    const entitySection = text.match(/### \[Involved Entities\]\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const lines = entitySection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.entities = lines.map(l => {
@@ -699,22 +701,22 @@ const parseInterview = (text) => {
     // Extract interview topic
     const topicMatch = text.match(/\*\*Interview Topic:\*\*\s*(.+?)(?:\n|$)/)
     if (topicMatch) result.topic = topicMatch[1].trim()
-    
-    // Extract interview count
+
+    // Extract interview count (e.g. "5 / 9 simulation Agents")
     const countMatch = text.match(/\*\*Interview Count:\*\*\s*(\d+)\s*\/\s*(\d+)/)
     if (countMatch) {
       result.successCount = parseInt(countMatch[1])
       result.totalCount = parseInt(countMatch[2])
       result.agentCount = `${countMatch[1]} / ${countMatch[2]}`
     }
-    
-    // Extract interview subject selection reasons
-    const reasonMatch = text.match(/### Interview Subject Selection Reasons\n([\s\S]*?)(?=\n---\n|\n### Interview Records)/)
+
+    // Extract interviewee selection rationale
+    const reasonMatch = text.match(/### Interviewee Selection Rationale\n([\s\S]*?)(?=\n---\n|\n### Interview Transcript)/)
     if (reasonMatch) {
       result.selectionReason = reasonMatch[1].trim()
     }
-    
-    // Parse each person's selection reason
+
+    // Parse selection rationale for each interviewee
     const parseIndividualReasons = (reasonText) => {
       const reasons = {}
       if (!reasonText) return reasons
@@ -728,26 +730,26 @@ const parseInterview = (text) => {
         let name = null
         let reasonStart = null
         
-        // Format 1: number. **name(index=X)**: reason
-        // Example: 1. **Alumni_345(index=1)**: As a university alumnus...
+        // Format 1: number. **Name (index=X)**: reason
+        // e.g.: 1. **Alumni_345 (index=1)**: As a university alumna...
         headerMatch = line.match(/^\d+\.\s*\*\*([^*（(]+)(?:[（(]index\s*=?\s*\d+[)）])?\*\*[：:]\s*(.*)/)
         if (headerMatch) {
           name = headerMatch[1].trim()
           reasonStart = headerMatch[2]
         }
-        
-        // Format 2: - select name(index X): reason
-        // Example: - Select Parent_601(index 0): As parent group representative...
+
+        // Format 2: - Chose Name (index X): reason
+        // e.g.: - Chose Parent_601 (index 0): as a representative of the parent demographic...
         if (!headerMatch) {
-          headerMatch = line.match(/^-\s*Select([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
+          headerMatch = line.match(/^-\s*Chose\s+([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
           if (headerMatch) {
             name = headerMatch[1].trim()
             reasonStart = headerMatch[2]
           }
         }
-        
-        // Format 3: - **name(index X)**: reason
-        // Example: - **Parent_601(index 0)**: As parent group representative...
+
+        // Format 3: - **Name (index X)**: reason
+        // e.g.: - **Parent_601 (index 0)**: as a representative of the parent demographic...
         if (!headerMatch) {
           headerMatch = line.match(/^-\s*\*\*([^*（(]+)(?:[（(]index\s*=?\s*\d+[)）])?\*\*[：:]\s*(.*)/)
           if (headerMatch) {
@@ -755,22 +757,22 @@ const parseInterview = (text) => {
             reasonStart = headerMatch[2]
           }
         }
-        
+
         if (name) {
-          // Save previous person's reason
+          // Save the previous interviewee's reason
           if (currentName && currentReason.length > 0) {
             reasons[currentName] = currentReason.join(' ').trim()
           }
-          // Start new person
+          // Begin a new interviewee
           currentName = name
           currentReason = reasonStart ? [reasonStart.trim()] : []
-        } else if (currentName && line.trim() && !line.match(/^Not selected|^In summary|^Final selection/)) {
-          // Reason continuation (exclude ending summary)
+        } else if (currentName && line.trim() && !line.match(/^Not\s+selected|^In\s+summary|^Final\s+selection/i)) {
+          // Continuation line of the reason (excluding closing summary paragraph)
           currentReason.push(line.trim())
         }
       }
-      
-      // Save last person's reason
+
+      // Save the last interviewee's reason
       if (currentName && currentReason.length > 0) {
         reasons[currentName] = currentReason.join(' ').trim()
       }
@@ -797,10 +799,10 @@ const parseInterview = (text) => {
         quotes: []
       }
       
-      // Extract title
+      // Extract title (e.g. "Student", "Educator", etc.)
       const titleMatch = block.match(/^(.+?)\n/)
       if (titleMatch) interview.title = titleMatch[1].trim()
-      
+
       // Extract name and role
       const nameRoleMatch = block.match(/\*\*(.+?)\*\*\s*\((.+?)\)/)
       if (nameRoleMatch) {
@@ -809,21 +811,21 @@ const parseInterview = (text) => {
         // Set this person's selection reason
         interview.selectionReason = individualReasons[interview.name] || ''
       }
-      
+
       // Extract bio
       const bioMatch = block.match(/_Bio:\s*([\s\S]*?)_\n/)
       if (bioMatch) {
         interview.bio = bioMatch[1].trim().replace(/\.\.\.$/, '...')
       }
-      
+
       // Extract question list
       const qMatch = block.match(/\*\*Q:\*\*\s*([\s\S]*?)(?=\n\n\*\*A:\*\*|\*\*A:\*\*)/)
       if (qMatch) {
         const qText = qMatch[1].trim()
-        // Split questions by number
+        // Split questions by numeric prefix
         const questions = qText.split(/\n\d+\.\s+/).filter(q => q.trim())
         if (questions.length > 0) {
-          // Special handling if first question starts with "1."
+          // Handle special case when the first question is prefixed with "1."
           const firstQ = qText.match(/^1\.\s+(.+)/)
           if (firstQ) {
             interview.questions = [firstQ[1].trim(), ...questions.slice(1).map(q => q.trim())]
@@ -832,46 +834,46 @@ const parseInterview = (text) => {
           }
         }
       }
-      
+
       // Extract answers - split by Twitter and Reddit
       const answerMatch = block.match(/\*\*A:\*\*\s*([\s\S]*?)(?=\*\*Key Quotes|$)/)
       if (answerMatch) {
         const answerText = answerMatch[1].trim()
-        
+
         // Separate Twitter and Reddit answers
-        const twitterMatch = answerText.match(/[Twitter Platform Answer]\n?([\s\S]*?)(?=[Reddit Platform Answer]|$)/)
-        const redditMatch = answerText.match(/[Reddit Platform Answer]\n?([\s\S]*?)$/)
-        
+        const twitterMatch = answerText.match(/\[Twitter Platform Response\]\n?([\s\S]*?)(?=\[Reddit Platform Response\]|$)/)
+        const redditMatch = answerText.match(/\[Reddit Platform Response\]\n?([\s\S]*?)$/)
+
         if (twitterMatch) {
           interview.twitterAnswer = twitterMatch[1].trim()
         }
         if (redditMatch) {
           interview.redditAnswer = redditMatch[1].trim()
         }
-        
-        // Platform fallback logic (compatibility with old format: single platform marker)
+
+        // Platform fallback logic (compatible with older formats that mark only one platform)
         if (!twitterMatch && redditMatch) {
-          // Only Reddit answer, copy as default display when not placeholder
-          if (interview.redditAnswer && interview.redditAnswer !== '(No response from this platform)') {
+          // Reddit-only answer: copy to default display when it's not placeholder text
+          if (interview.redditAnswer && interview.redditAnswer !== '(No response on this platform)') {
             interview.twitterAnswer = interview.redditAnswer
           }
         } else if (twitterMatch && !redditMatch) {
-          if (interview.twitterAnswer && interview.twitterAnswer !== '(No response from this platform)') {
+          if (interview.twitterAnswer && interview.twitterAnswer !== '(No response on this platform)') {
             interview.redditAnswer = interview.twitterAnswer
           }
         } else if (!twitterMatch && !redditMatch) {
-          // No platform markers (very old format), use entire text as answer
+          // No platform markers (very old format): use the whole text as the answer
           interview.twitterAnswer = answerText
         }
       }
-      
+
       // Extract key quotes (compatible with multiple quote formats)
       const quotesMatch = block.match(/\*\*Key Quotes:\*\*\n([\s\S]*?)(?=\n---|\n####|$)/)
       if (quotesMatch) {
         const quotesText = quotesMatch[1]
-        // Prefer matching > "text" format
+        // Prefer matching the > "text" format
         let quoteMatches = quotesText.match(/> "([^"]+)"/g)
-        // Fallback: match > "text" or > \u201Ctext\u201D (Chinese quotes)
+        // Fallback: match > "text" or > \u201Ctext\u201D (typographic quotes)
         if (!quoteMatches) {
           quoteMatches = quotesText.match(/> [\u201C""]([^\u201D""]+)[\u201D""]/g)
         }
@@ -888,7 +890,7 @@ const parseInterview = (text) => {
     })
     
     // Extract interview summary
-    const summaryMatch = text.match(/### Interview Summary and Key Insights\n([\s\S]*?)$/)
+    const summaryMatch = text.match(/### Interview Summary and Core Insights\n([\s\S]*?)$/)
     if (summaryMatch) {
       result.summary = summaryMatch[1].trim()
     }
@@ -910,21 +912,21 @@ const parseQuickSearch = (text) => {
   
   try {
     // Extract search query
-    const queryMatch = text.match(/Search query:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Search Query:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
-    
+
     // Extract result count
-    const countMatch = text.match(/Found\s*(\d+)\s*items/)
+    const countMatch = text.match(/Found\s*(\d+)\s*results?/)
     if (countMatch) result.count = parseInt(countMatch[1])
-    
-    // Extract related facts - full extraction, no limit
-    const factsSection = text.match(/### Related facts:\n([\s\S]*)$/)
+
+    // Extract related facts - full extraction, no count limit
+    const factsSection = text.match(/### Related Facts:\n([\s\S]*)$/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
-    
-    // Try to extract edge info (if available)
+
+    // Try to extract edge info (if any)
     const edgesSection = text.match(/### Related Edges:\n([\s\S]*?)(?=\n###|$)/)
     if (edgesSection) {
       const lines = edgesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -936,8 +938,8 @@ const parseQuickSearch = (text) => {
         return null
       }).filter(Boolean)
     }
-    
-    // Try to extract node info (if available)
+
+    // Try to extract node info (if any)
     const nodesSection = text.match(/### Related Nodes:\n([\s\S]*?)(?=\n###|$)/)
     if (nodesSection) {
       const lines = nodesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -962,6 +964,7 @@ const parseQuickSearch = (text) => {
 const InsightDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
+    const { t } = useI18n()
     const activeTab = ref('facts') // 'facts', 'entities', 'relations', 'subqueries'
     const expandedFacts = ref(false)
     const expandedEntities = ref(false)
@@ -1003,7 +1006,7 @@ const InsightDisplay = {
         ]),
         props.result.query && h('div', { class: 'header-topic' }, props.result.query),
         props.result.simulationRequirement && h('div', { class: 'header-scenario' }, [
-          h('span', { class: 'scenario-label' }, 'Prediction scenario: '),
+          h('span', { class: 'scenario-label' }, t('step4.scenarioLabel')),
           h('span', { class: 'scenario-text' }, props.result.simulationRequirement)
         ])
       ]),
@@ -1014,25 +1017,25 @@ const InsightDisplay = {
           class: ['insight-tab', { active: activeTab.value === 'facts' }],
           onClick: () => { activeTab.value = 'facts' }
         }, [
-          h('span', { class: 'tab-label' }, `Current Key Memories (${props.result.facts.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabKeyFacts', { count: props.result.facts.length }))
         ]),
         h('button', {
           class: ['insight-tab', { active: activeTab.value === 'entities' }],
           onClick: () => { activeTab.value = 'entities' }
         }, [
-          h('span', { class: 'tab-label' }, `Core Entities (${props.result.entities.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabCoreEntities', { count: props.result.entities.length }))
         ]),
         h('button', {
           class: ['insight-tab', { active: activeTab.value === 'relations' }],
           onClick: () => { activeTab.value = 'relations' }
         }, [
-          h('span', { class: 'tab-label' }, `Relationship Chains (${props.result.relations.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabRelationChains', { count: props.result.relations.length }))
         ]),
         props.result.subQueries.length > 0 && h('button', {
           class: ['insight-tab', { active: activeTab.value === 'subqueries' }],
           onClick: () => { activeTab.value = 'subqueries' }
         }, [
-          h('span', { class: 'tab-label' }, `Sub-questions (${props.result.subQueries.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabSubQueries', { count: props.result.subQueries.length }))
         ])
       ]),
       
@@ -1041,8 +1044,8 @@ const InsightDisplay = {
         // Facts Tab
         activeTab.value === 'facts' && props.result.facts.length > 0 && h('div', { class: 'facts-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Latest key facts from temporal memory'),
-            h('span', { class: 'panel-count' }, `${props.result.facts.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelKeyFacts')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.facts.length }))
           ]),
           h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1055,35 +1058,35 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `Collapse ▲` : `Show all ${props.result.facts.length} items ▼`)
+          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
-        
+
         // Entities Tab
         activeTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Core Entities'),
-            h('span', { class: 'panel-count' }, `${props.result.entities.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelCoreEntities')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.entities.length }))
           ]),
           h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 12)).map((entity, i) => 
               h('div', { class: 'entity-tag', key: i, title: entity.summary || '' }, [
                 h('span', { class: 'entity-name' }, entity.name),
                 h('span', { class: 'entity-type' }, entity.type),
-                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, `${entity.relatedFactsCount}items`)
+                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, t('step4.factCount', { count: entity.relatedFactsCount }))
               ])
             )
           ),
           props.result.entities.length > 12 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? `Collapse ▲` : `Show all ${props.result.entities.length} ▼`)
+          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ]),
-        
+
         // Relations Tab
         activeTab.value === 'relations' && props.result.relations.length > 0 && h('div', { class: 'relations-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Relationship Chains'),
-            h('span', { class: 'panel-count' }, `${props.result.relations.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelRelationChains')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.relations.length }))
           ]),
           h('div', { class: 'relations-list' },
             (expandedRelations.value ? props.result.relations : props.result.relations.slice(0, INITIAL_SHOW_COUNT)).map((rel, i) => 
@@ -1101,14 +1104,14 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? `Collapse ▲` : `Show all ${props.result.relations.length} items ▼`)
+          }, expandedRelations.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.relations.length }))
         ]),
-        
+
         // Sub-queries Tab
         activeTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Drift Query Generated Sub-questions'),
-            h('span', { class: 'panel-count' }, `${props.result.subQueries.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelSubQueries')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.subQueries.length }))
           ]),
           h('div', { class: 'subqueries-list' },
             props.result.subQueries.map((sq, i) => 
@@ -1121,9 +1124,9 @@ const InsightDisplay = {
         ]),
         
         // Empty state
-        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, 'No current key memories'),
-        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, 'No core entities'),
-        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, 'No relationship chains')
+        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyKeyFacts')),
+        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyCoreEntities')),
+        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyRelationChains'))
       ])
     ])
   }
@@ -1133,6 +1136,7 @@ const InsightDisplay = {
 const PanoramaDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
+    const { t } = useI18n()
     const activeTab = ref('active') // 'active', 'historical', 'entities'
     const expandedActive = ref(false)
     const expandedHistorical = ref(false)
@@ -1176,19 +1180,19 @@ const PanoramaDisplay = {
           class: ['panorama-tab', { active: activeTab.value === 'active' }],
           onClick: () => { activeTab.value = 'active' }
         }, [
-          h('span', { class: 'tab-label' }, `Current Valid Memories (${props.result.activeFacts.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabActiveFacts', { count: props.result.activeFacts.length }))
         ]),
         h('button', {
           class: ['panorama-tab', { active: activeTab.value === 'historical' }],
           onClick: () => { activeTab.value = 'historical' }
         }, [
-          h('span', { class: 'tab-label' }, `Historical Memories (${props.result.historicalFacts.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabHistoricalFacts', { count: props.result.historicalFacts.length }))
         ]),
         h('button', {
           class: ['panorama-tab', { active: activeTab.value === 'entities' }],
           onClick: () => { activeTab.value = 'entities' }
         }, [
-          h('span', { class: 'tab-label' }, `Involved Entities (${props.result.entities.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabEntities', { count: props.result.entities.length }))
         ])
       ]),
       
@@ -1197,8 +1201,8 @@ const PanoramaDisplay = {
         // Active Facts Tab
         activeTab.value === 'active' && h('div', { class: 'facts-panel active-facts' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Current Valid Memories'),
-            h('span', { class: 'panel-count' }, `${props.result.activeFacts.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelActiveFacts')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.activeFacts.length }))
           ]),
           props.result.activeFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedActive.value ? props.result.activeFacts : props.result.activeFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1207,25 +1211,25 @@ const PanoramaDisplay = {
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, 'No current valid memories'),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptyActiveFacts')),
           props.result.activeFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? `Collapse ▲` : `Show all ${props.result.activeFacts.length} items ▼`)
+          }, expandedActive.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.activeFacts.length }))
         ]),
         
         // Historical Facts Tab
         activeTab.value === 'historical' && h('div', { class: 'facts-panel historical-facts' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Historical Memories'),
-            h('span', { class: 'panel-count' }, `${props.result.historicalFacts.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelHistoricalFacts')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.historicalFacts.length }))
           ]),
           props.result.historicalFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedHistorical.value ? props.result.historicalFacts : props.result.historicalFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
               h('div', { class: 'fact-item historical', key: i }, [
                 h('span', { class: 'fact-number' }, i + 1),
                 h('div', { class: 'fact-content' }, [
-                  // Try to extract time info [time - time]
+                  // Attempt to extract time info [time - time]
                   (() => {
                     const timeMatch = fact.match(/^\[(.+?)\]\s*(.*)$/)
                     if (timeMatch) {
@@ -1239,18 +1243,18 @@ const PanoramaDisplay = {
                 ])
               ])
             )
-          ) : h('div', { class: 'empty-state' }, 'No historical memories'),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptyHistoricalFacts')),
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? `Collapse ▲` : `Show all ${props.result.historicalFacts.length} items ▼`)
+          }, expandedHistorical.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.historicalFacts.length }))
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Involved Entities'),
-            h('span', { class: 'panel-count' }, `${props.result.entities.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelEntities')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.entities.length }))
           ]),
           props.result.entities.length > 0 ? h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 8)).map((entity, i) => 
@@ -1259,11 +1263,11 @@ const PanoramaDisplay = {
                 entity.type && h('span', { class: 'entity-type' }, entity.type)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, 'No involved entities'),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptyEntities')),
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? `Collapse ▲` : `Show all ${props.result.entities.length} ▼`)
+          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ])
       ])
     ])
@@ -1292,16 +1296,16 @@ const InterviewDisplay = {
     
     const activeIndex = ref(0)
     const expandedAnswers = ref(new Set())
-    // Maintain independent platform selection state for each Q&A pair
+    // Maintain independent platform-selection state per question/answer pair
     const platformTabs = reactive({}) // { 'agentIdx-qIdx': 'twitter' | 'reddit' }
-    
-    // Get current platform selection for a question
+
+    // Get the current platform selection for a given question
     const getPlatformTab = (agentIdx, qIdx) => {
       const key = `${agentIdx}-${qIdx}`
       return platformTabs[key] || 'twitter'
     }
-    
-    // Set platform selection for a question
+
+    // Set the platform selection for a given question
     const setPlatformTab = (agentIdx, qIdx, platform) => {
       const key = `${agentIdx}-${qIdx}`
       platformTabs[key] = platform
@@ -1323,26 +1327,26 @@ const InterviewDisplay = {
       return text.substring(0, 400) + '...'
     }
     
-    // Check if text is a platform placeholder
+    // Check whether the text is a platform placeholder
     const isPlaceholderText = (text) => {
       if (!text) return true
       const t = text.trim()
-      return t === '(No response from this platform)' || t === '(No response from this platform)' || t === '[No response]'
+      return t === '(No response on this platform)' || t === '[No Response]'
     }
 
-    // Try to split answers by question number
+    // Attempt to split the answer by question number
     const splitAnswerByQuestions = (answerText, questionCount) => {
       if (!answerText || questionCount <= 0) return [answerText]
       if (isPlaceholderText(answerText)) return ['']
 
-      // Support two numbering formats:
-      // 1. "问题X：" or "问题X:" (Chinese format, backend new format) - kept for parsing
-      // 2. "1. " or "\n1. " (number+dot, legacy format)
+      // Supports two numbering formats:
+      // 1. "Question X:" (new backend format)
+      // 2. "1. " or "\n1. " (number + period, legacy format)
       let matches = []
       let match
 
-      // Try Chinese question format first
-      const cnPattern = /(?:^|[\r\n]+)问题(\d+)[：:]\s*/g
+      // Prefer the "Question X:" format
+      const cnPattern = /(?:^|[\r\n]+)Question\s*(\d+)[：:]\s*/g
       while ((match = cnPattern.exec(answerText)) !== null) {
         matches.push({
           num: parseInt(match[1]),
@@ -1351,7 +1355,7 @@ const InterviewDisplay = {
         })
       }
 
-      // If no match, fall back to "number." format
+      // If no matches, fall back to the "number." format
       if (matches.length === 0) {
         const numPattern = /(?:^|[\r\n]+)(\d+)\.\s+/g
         while ((match = numPattern.exec(answerText)) !== null) {
@@ -1363,16 +1367,16 @@ const InterviewDisplay = {
         }
       }
 
-      // If no numbering found or only one, return whole
+      // If no numbering found, or only one match, return the whole text
       if (matches.length <= 1) {
         const cleaned = answerText
-          .replace(/^问题\d+[：:]\s*/, '')
+          .replace(/^Question\s*\d+[：:]\s*/, '')
           .replace(/^\d+\.\s+/, '')
           .trim()
         return [cleaned || answerText]
       }
 
-      // Extract parts by numbering
+      // Extract each part by numbering
       const parts = []
       for (let i = 0; i < matches.length; i++) {
         const current = matches[i]
@@ -1393,7 +1397,7 @@ const InterviewDisplay = {
       return [answerText]
     }
     
-    // Get the answer for a specific question
+    // Get the answer corresponding to a specific question
     const getAnswerForQuestion = (interview, qIdx, platform) => {
       const answer = platform === 'twitter' ? interview.twitterAnswer : (interview.redditAnswer || interview.twitterAnswer)
       if (!answer || isPlaceholderText(answer)) return answer || ''
@@ -1401,21 +1405,21 @@ const InterviewDisplay = {
       const questionCount = interview.questions?.length || 1
       const answers = splitAnswerByQuestions(answer, questionCount)
 
-      // Split successful and index valid
+      // Split succeeded and index is valid
       if (answers.length > 1 && qIdx < answers.length) {
         return answers[qIdx] || ''
       }
 
-      // Split failed: first question returns full answer, rest return empty
+      // Split failed: first question returns the full answer, the rest return empty
       return qIdx === 0 ? answer : ''
     }
-    
-    // Check if a question has dual-platform answers (filter placeholders)
+
+    // Check whether a question has dual-platform answers (filtering placeholder text)
     const hasMultiplePlatforms = (interview, qIdx) => {
       if (!interview.twitterAnswer || !interview.redditAnswer) return false
       const twitterAnswer = getAnswerForQuestion(interview, qIdx, 'twitter')
       const redditAnswer = getAnswerForQuestion(interview, qIdx, 'reddit')
-      // Both platforms have real answers (not placeholders) and content differs
+      // Both platforms have real answers (non-placeholder) and content differs
       return !isPlaceholderText(twitterAnswer) && !isPlaceholderText(redditAnswer) && twitterAnswer !== redditAnswer
     }
     
@@ -1471,7 +1475,7 @@ const InterviewDisplay = {
           h('div', { class: 'reason-content' }, props.result.interviews[activeIndex.value].selectionReason)
         ]),
         
-        // Q&A Conversation Thread
+        // Q&A Conversation Thread - one-question-one-answer layout
         h('div', { class: 'qa-thread' }, 
           (props.result.interviews[activeIndex.value]?.questions?.length > 0 
             ? props.result.interviews[activeIndex.value].questions 
@@ -1501,7 +1505,7 @@ const InterviewDisplay = {
                 h('div', { class: 'qa-content' }, [
                   h('div', { class: 'qa-answer-header' }, [
                     h('div', { class: 'qa-sender' }, interview?.name || 'Agent'),
-                    // Dual-platform toggle (shown only when real dual-platform answers exist)
+                    // Dual-platform toggle button (shown only when there is a real dual-platform answer)
                     hasDualPlatform && h('div', { class: 'platform-switch' }, [
                       h('button', {
                         class: ['platform-btn', { active: currentPlatform === 'twitter' }],
@@ -1512,7 +1516,7 @@ const InterviewDisplay = {
                           h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
                           h('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
                         ]),
-                        h('span', {}, 'World 1')
+                        h('span', {}, t('step4.world1'))
                       ]),
                       h('button', {
                         class: ['platform-btn', { active: currentPlatform === 'reddit' }],
@@ -1521,7 +1525,7 @@ const InterviewDisplay = {
                         h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
                           h('path', { d: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' })
                         ]),
-                        h('span', {}, 'World 2')
+                        h('span', {}, t('step4.world2'))
                       ])
                     ])
                   ]),
@@ -1533,7 +1537,7 @@ const InterviewDisplay = {
                           .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                           .replace(/\n/g, '<br>')
                   }),
-                  // Expand/Collapse Button (not shown for placeholder text)
+                  // Expand/Collapse Button (hidden for placeholder text)
                   !isPlaceholder && answerText.length > 400 && h('button', {
                     class: 'expand-answer-btn',
                     onClick: () => toggleAnswer(expandKey)
@@ -1577,6 +1581,7 @@ const InterviewDisplay = {
 const QuickSearchDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
+    const { t } = useI18n()
     const activeTab = ref('facts') // 'facts', 'edges', 'nodes'
     const expandedFacts = ref(false)
     const INITIAL_SHOW_COUNT = 5
@@ -1610,7 +1615,7 @@ const QuickSearchDisplay = {
           ])
         ]),
         props.result.query && h('div', { class: 'header-query' }, [
-          h('span', { class: 'query-label' }, 'Search: '),
+          h('span', { class: 'query-label' }, t('step4.searchLabel')),
           h('span', { class: 'query-text' }, props.result.query)
         ])
       ]),
@@ -1621,19 +1626,19 @@ const QuickSearchDisplay = {
           class: ['quicksearch-tab', { active: activeTab.value === 'facts' }],
           onClick: () => { activeTab.value = 'facts' }
         }, [
-          h('span', { class: 'tab-label' }, `Facts (${props.result.facts.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabFacts', { count: props.result.facts.length }))
         ]),
         hasEdges.value && h('button', {
           class: ['quicksearch-tab', { active: activeTab.value === 'edges' }],
           onClick: () => { activeTab.value = 'edges' }
         }, [
-          h('span', { class: 'tab-label' }, `Relations (${props.result.edges.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabEdges', { count: props.result.edges.length }))
         ]),
         hasNodes.value && h('button', {
           class: ['quicksearch-tab', { active: activeTab.value === 'nodes' }],
           onClick: () => { activeTab.value = 'nodes' }
         }, [
-          h('span', { class: 'tab-label' }, `Nodes (${props.result.nodes.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabNodes', { count: props.result.nodes.length }))
         ])
       ]),
       
@@ -1642,8 +1647,8 @@ const QuickSearchDisplay = {
         // Facts (always show if no tabs, or when facts tab is active)
         ((!showTabs.value) || activeTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
           !showTabs.value && h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Search Results'),
-            h('span', { class: 'panel-count' }, `${props.result.facts.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelSearchResults')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.facts.length }))
           ]),
           props.result.facts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1652,18 +1657,18 @@ const QuickSearchDisplay = {
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, 'No relevant results found'),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptySearchResults')),
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `Collapse ▲` : `Show all ${props.result.facts.length} items ▼`)
+          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
         
         // Edges Tab
         activeTab.value === 'edges' && hasEdges.value && h('div', { class: 'edges-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Related Relations'),
-            h('span', { class: 'panel-count' }, `${props.result.edges.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelRelatedEdges')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.edges.length }))
           ]),
           h('div', { class: 'edges-list' },
             props.result.edges.map((edge, i) => 
@@ -1683,8 +1688,8 @@ const QuickSearchDisplay = {
         // Nodes Tab
         activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Related Nodes'),
-            h('span', { class: 'panel-count' }, `${props.result.nodes.length} total`)
+            h('span', { class: 'panel-title' }, t('step4.panelRelatedNodes')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.nodes.length }))
           ]),
           h('div', { class: 'nodes-grid' },
             props.result.nodes.map((node, i) => 
@@ -1764,18 +1769,18 @@ const isFinalizing = computed(() => {
   return !isComplete.value && isPlanningDone.value && totalSections.value > 0 && completedSections.value >= totalSections.value
 })
 
-// Currently active step (for top display)
+// Currently active step (used for the top display)
 const activeStep = computed(() => {
   const steps = workflowSteps.value
-  // Find currently active step
+  // Find the currently active step
   const active = steps.find(s => s.status === 'active')
   if (active) return active
-  
-  // If no active, return last done step
+
+  // If no active step, return the last done step
   const doneSteps = steps.filter(s => s.status === 'done')
   if (doneSteps.length > 0) return doneSteps[doneSteps.length - 1]
-  
-  // Otherwise return first step
+
+  // Otherwise return the first step
   return steps[0] || { noLabel: '--', title: 'Waiting to start', status: 'todo', meta: '' }
 })
 
@@ -1869,25 +1874,25 @@ const truncateText = (text, maxLen) => {
 const renderMarkdown = (content) => {
   if (!content) return ''
   
-  // Remove leading H2 (## xxx) since section title is shown in outer layer
+  // Strip the leading H2 heading (## xxx) since the section title is already shown outside
   let processedContent = content.replace(/^##\s+.+\n+/, '')
   
-  // Process code blocks
+  // Handle code blocks
   let html = processedContent.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>')
-  
-  // Process inline code
+
+  // Handle inline code
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-  
-  // Process headings
+
+  // Handle headings
   html = html.replace(/^#### (.+)$/gm, '<h5 class="md-h5">$1</h5>')
   html = html.replace(/^### (.+)$/gm, '<h4 class="md-h4">$1</h4>')
   html = html.replace(/^## (.+)$/gm, '<h3 class="md-h3">$1</h3>')
   html = html.replace(/^# (.+)$/gm, '<h2 class="md-h2">$1</h2>')
   
-  // Process blockquotes
+  // Handle blockquotes
   html = html.replace(/^> (.+)$/gm, '<blockquote class="md-quote">$1</blockquote>')
-  
-  // Process lists - support sub-lists
+
+  // Handle lists - supports sub-lists
   html = html.replace(/^(\s*)- (.+)$/gm, (match, indent, text) => {
     const level = Math.floor(indent.length / 2)
     return `<li class="md-li" data-level="${level}">${text}</li>`
@@ -1902,47 +1907,47 @@ const renderMarkdown = (content) => {
   // Wrap ordered lists
   html = html.replace(/(<li class="md-oli"[^>]*>.*?<\/li>\s*)+/g, '<ol class="md-ol">$&</ol>')
 
-  // Clean whitespace between list items
+  // Clean up all whitespace between list items
   html = html.replace(/<\/li>\s+<li/g, '</li><li')
-  // Clean whitespace after list start tags
+  // Clean up whitespace after opening list tag
   html = html.replace(/<ul class="md-ul">\s+/g, '<ul class="md-ul">')
   html = html.replace(/<ol class="md-ol">\s+/g, '<ol class="md-ol">')
-  // Clean whitespace before list end tags
+  // Clean up whitespace before closing list tag
   html = html.replace(/\s+<\/ul>/g, '</ul>')
   html = html.replace(/\s+<\/ol>/g, '</ol>')
-  
-  // Process bold and italic
+
+  // Handle bold and italic
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
   html = html.replace(/_(.+?)_/g, '<em>$1</em>')
-  
-  // Process horizontal rules
+
+  // Handle horizontal rules
   html = html.replace(/^---$/gm, '<hr class="md-hr">')
-  
-  // Process line breaks - blank lines become paragraph breaks, single newlines become <br>
+
+  // Handle newlines - blank lines become paragraph breaks; single newlines become <br>
   html = html.replace(/\n\n/g, '</p><p class="md-p">')
   html = html.replace(/\n/g, '<br>')
-  
-  // Wrap in paragraphs
+
+  // Wrap in paragraph tags
   html = '<p class="md-p">' + html + '</p>'
-  
-  // Clean empty paragraphs
+
+  // Clean up empty paragraphs
   html = html.replace(/<p class="md-p"><\/p>/g, '')
   html = html.replace(/<p class="md-p">(<h[2-5])/g, '$1')
   html = html.replace(/(<\/h[2-5]>)<\/p>/g, '$1')
   html = html.replace(/<p class="md-p">(<ul|<ol|<blockquote|<pre|<hr)/g, '$1')
   html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>|<\/pre>)<\/p>/g, '$1')
-  // Clean <br> tags around block-level elements
+  // Clean up <br> tags before and after block-level elements
   html = html.replace(/<br>\s*(<ul|<ol|<blockquote)/g, '$1')
   html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>)\s*<br>/g, '$1')
-  // Clean <p><br> followed by block elements (caused by extra blank lines)
+  // Clean up <p><br> immediately followed by block-level elements (caused by extra blank lines)
   html = html.replace(/<p class="md-p">(<br>\s*)+(<ul|<ol|<blockquote|<pre|<hr)/g, '$2')
-  // Clean consecutive <br> tags
+  // Clean up consecutive <br> tags
   html = html.replace(/(<br>\s*){2,}/g, '<br>')
-  // Clean <br> before paragraph start tags after block elements
+  // Clean up <br> before paragraph opening tag immediately after block-level elements
   html = html.replace(/(<\/ol>|<\/ul>|<\/blockquote>)<br>(<p|<div)/g, '$1$2')
 
-  // Fix non-consecutive ordered list numbering: maintain incrementing numbers when single-item <ol> are separated by paragraph content
+  // Fix numbering for non-contiguous ordered lists: when single-item <ol>s are separated by paragraph content, keep numbering incremental
   const tokens = html.split(/(<ol class="md-ol">(?:<li class="md-oli"[^>]*>[\s\S]*?<\/li>)+<\/ol>)/g)
   let olCounter = 0
   let inSequence = false
@@ -2006,9 +2011,9 @@ const getActionLabel = (action) => {
 }
 
 const getLogLevelClass = (log) => {
-  if (log.includes('ERROR')) return 'error'
-  if (log.includes('WARNING')) return 'warning'
-  // INFO uses default color, not marked as success
+  if (log.includes('ERROR') || log.includes('Error')) return 'error'
+  if (log.includes('WARNING') || log.includes('Warning')) return 'warning'
+  // INFO uses the default color; do not flag as success
   return ''
 }
 
@@ -2037,11 +2042,11 @@ const fetchAgentLog = async () => {
             currentSectionIndex.value = log.section_index
           }
 
-          // section_complete - section generation complete
+          // section_complete - section generation finished
           if (log.action === 'section_complete') {
             if (log.details?.content) {
               generatedSections.value[log.section_index] = log.details.content
-              // Auto-expand just-generated section
+              // Auto-expand the just-generated section
               expandedContent.value.add(log.section_index - 1)
               currentSectionIndex.value = null
             }
@@ -2049,10 +2054,10 @@ const fetchAgentLog = async () => {
           
           if (log.action === 'report_complete') {
             isComplete.value = true
-            currentSectionIndex.value = null  // Ensure loading state is cleared
+            currentSectionIndex.value = null  // Ensure the loading state is cleared
             emit('update-status', 'completed')
             stopPolling()
-            // Scroll logic handled uniformly in nextTick after loop ends
+            // Scroll handling is unified in the nextTick after the loop ends
           }
           
           if (log.action === 'report_start') {
@@ -2064,7 +2069,7 @@ const fetchAgentLog = async () => {
         
         nextTick(() => {
           if (rightPanel.value) {
-            // If task complete, scroll to top; otherwise scroll to bottom to follow latest logs
+            // If task is complete, scroll to top; otherwise scroll to bottom to follow latest logs
             if (isComplete.value) {
               rightPanel.value.scrollTop = 0
             } else {
@@ -2079,39 +2084,39 @@ const fetchAgentLog = async () => {
   }
 }
 
-// Extract final answer content - from LLM response
+// Extract the final answer content - pull section content from the LLM response
 const extractFinalContent = (response) => {
   if (!response) return null
-  
-  // Try to extract content within <final_answer> tags
+
+  // Try to extract content inside <final_answer> tags
   const finalAnswerTagMatch = response.match(/<final_answer>([\s\S]*?)<\/final_answer>/)
   if (finalAnswerTagMatch) {
     return finalAnswerTagMatch[1].trim()
   }
-  
-  // Try to find content after Final Answer: (supports multiple formats)
+
+  // Try to find content following "Final Answer:" (supports multiple formats)
   // Format 1: Final Answer:\n\ncontent
   // Format 2: Final Answer: content
   const finalAnswerMatch = response.match(/Final\s*Answer:\s*\n*([\s\S]*)$/i)
   if (finalAnswerMatch) {
     return finalAnswerMatch[1].trim()
   }
-  
-  // Try to find content after final answer:
+
+  // Try to find content following "Final Answer:" in the legacy (Chinese) format
   const chineseFinalMatch = response.match(/Final Answer[:：]\s*\n*([\s\S]*)$/i)
   if (chineseFinalMatch) {
     return chineseFinalMatch[1].trim()
   }
-  
-  // If starting with ## or # or >, it may be direct markdown content
+
+  // If it starts with ##, #, or >, it may be direct markdown content
   const trimmedResponse = response.trim()
   if (trimmedResponse.match(/^[#>]/)) {
     return trimmedResponse
   }
-  
-  // If content is long and contains markdown, try to remove thinking process and return
+
+  // If content is long and contains markdown, try to strip the reasoning and return the rest
   if (response.length > 300 && (response.includes('**') || response.includes('>'))) {
-    // Remove Thought: prefix thinking process
+    // Remove the leading Thought: reasoning section
     const thoughtMatch = response.match(/^Thought:[\s\S]*?(?=\n\n[^T]|\n\n$)/i)
     if (thoughtMatch) {
       const afterThought = response.substring(thoughtMatch[0].length).trim()
@@ -2456,7 +2461,7 @@ watch(() => props.reportId, (newId) => {
 .section-number {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
-  color: #9CA3AF; /* Dark gray, does not change with status */
+  color: #9CA3AF; /* Dark gray - does not change with state */
   font-weight: 500;
 }
 
@@ -5097,7 +5102,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
 }
 
-/* Console Logs - consistent with Step3Simulation.vue */
+/* Console Logs - kept consistent with Step3Simulation.vue */
 .console-logs {
   background: #000;
   color: #DDD;
@@ -5147,4 +5152,11 @@ watch(() => props.reportId, (newId) => {
 .log-msg.error { color: #EF5350; }
 .log-msg.warning { color: #FFA726; }
 .log-msg.success { color: #66BB6A; }
+</style>
+
+<style>
+/* English locale: smaller report title */
+html[lang="en"] .report-header-block .main-title {
+  font-size: 28px;
+}
 </style>

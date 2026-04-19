@@ -17,18 +17,18 @@ export const getReportStatus = (reportId) => {
 }
 
 /**
- * Get Agent logs (incremental)
+ * Get Agent log (incremental)
  * @param {string} reportId
- * @param {number} fromLine - Starting line number
+ * @param {number} fromLine - line number to start fetching from
  */
 export const getAgentLog = (reportId, fromLine = 0) => {
   return service.get(`/api/report/${reportId}/agent-log`, { params: { from_line: fromLine } })
 }
 
 /**
- * Get console logs (incremental)
+ * Get console log (incremental)
  * @param {string} reportId
- * @param {number} fromLine - Starting line number
+ * @param {number} fromLine - line number to start fetching from
  */
 export const getConsoleLog = (reportId, fromLine = 0) => {
   return service.get(`/api/report/${reportId}/console-log`, { params: { from_line: fromLine } })
@@ -43,7 +43,7 @@ export const getReport = (reportId) => {
 }
 
 /**
- * Chat with Report Agent
+ * Chat with the Report Agent
  * @param {Object} data - { simulation_id, message, chat_history? }
  */
 export const chatWithReport = (data) => {

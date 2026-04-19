@@ -22,7 +22,7 @@
               <span class="stat-value mono">{{ runStatus.twitter_current_round || 0 }}<span class="stat-total">/{{ runStatus.total_rounds || maxRounds || '-' }}</span></span>
             </span>
             <span class="stat">
-              <span class="stat-label">Elapsed Time</span>
+              <span class="stat-label">TIME</span>
               <span class="stat-value mono">{{ twitterElapsedTime }}</span>
             </span>
             <span class="stat">
@@ -43,7 +43,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Reddit platform progress -->
         <div class="platform-status reddit" :class="{ active: runStatus.reddit_running, completed: runStatus.reddit_completed }">
           <div class="platform-header">
@@ -63,7 +63,7 @@
               <span class="stat-value mono">{{ runStatus.reddit_current_round || 0 }}<span class="stat-total">/{{ runStatus.total_rounds || maxRounds || '-' }}</span></span>
             </span>
             <span class="stat">
-              <span class="stat-label">Elapsed Time</span>
+              <span class="stat-label">TIME</span>
               <span class="stat-value mono">{{ redditElapsedTime }}</span>
             </span>
             <span class="stat">
@@ -97,7 +97,7 @@
           @click="handleNextStep"
         >
           <span v-if="isGeneratingReport" class="loading-spinner-small"></span>
-          {{ isGeneratingReport ? 'Starting...' : 'Generate Results Report' }} 
+          {{ isGeneratingReport ? $t('step3.generatingReportBtn') : $t('step3.startGenerateReportBtn') }}
           <span v-if="!isGeneratingReport" class="arrow-icon">→</span>
         </button>
       </div>
@@ -157,12 +157,12 @@
               </div>
               
               <div class="card-body">
-                <!-- CREATE_POST: Publish post -->
+                <!-- CREATE_POST: publish a post -->
                 <div v-if="action.action_type === 'CREATE_POST' && action.action_args?.content" class="content-text main-text">
                   {{ action.action_args.content }}
                 </div>
 
-                <!-- QUOTE_POST: Quote post -->
+                <!-- QUOTE_POST: quote a post -->
                 <template v-if="action.action_type === 'QUOTE_POST'">
                   <div v-if="action.action_args?.quote_content" class="content-text">
                     {{ action.action_args.quote_content }}
@@ -178,7 +178,7 @@
                   </div>
                 </template>
 
-                <!-- REPOST: Repost -->
+                <!-- REPOST: repost -->
                 <template v-if="action.action_type === 'REPOST'">
                   <div class="repost-info">
                     <svg class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
@@ -189,7 +189,7 @@
                   </div>
                 </template>
 
-                <!-- LIKE_POST: Like post -->
+                <!-- LIKE_POST: like a post -->
                 <template v-if="action.action_type === 'LIKE_POST'">
                   <div class="like-info">
                     <svg class="icon-small filled" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
@@ -200,7 +200,7 @@
                   </div>
                 </template>
 
-                <!-- CREATE_COMMENT: Comment -->
+                <!-- CREATE_COMMENT: post a comment -->
                 <template v-if="action.action_type === 'CREATE_COMMENT'">
                   <div v-if="action.action_args?.content" class="content-text">
                     {{ action.action_args.content }}
@@ -211,7 +211,7 @@
                   </div>
                 </template>
 
-                <!-- SEARCH_POSTS: Search posts -->
+                <!-- SEARCH_POSTS: search posts -->
                 <template v-if="action.action_type === 'SEARCH_POSTS'">
                   <div class="search-info">
                     <svg class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -220,7 +220,7 @@
                   </div>
                 </template>
 
-                <!-- FOLLOW: Follow user -->
+                <!-- FOLLOW: follow a user -->
                 <template v-if="action.action_type === 'FOLLOW'">
                   <div class="follow-info">
                     <svg class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
@@ -240,7 +240,7 @@
                   </div>
                 </template>
 
-                <!-- DO_NOTHING: Idle -->
+                <!-- DO_NOTHING: no action (silent) -->
                 <template v-if="action.action_type === 'DO_NOTHING'">
                   <div class="idle-info">
                     <svg class="icon-small" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -248,7 +248,7 @@
                   </div>
                 </template>
 
-                <!-- Generic fallback: unknown type or content not handled above -->
+                <!-- Generic fallback: unknown type, or has content but not handled above -->
                 <div v-if="!['CREATE_POST', 'QUOTE_POST', 'REPOST', 'LIKE_POST', 'CREATE_COMMENT', 'SEARCH_POSTS', 'FOLLOW', 'UPVOTE_POST', 'DOWNVOTE_POST', 'DO_NOTHING'].includes(action.action_type) && action.action_args?.content" class="content-text">
                   {{ action.action_args.content }}
                 </div>
@@ -288,13 +288,16 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  startSimulation, 
+import { useI18n } from 'vue-i18n'
+import {
+  startSimulation,
   stopSimulation,
-  getRunStatus, 
+  getRunStatus,
   getRunStatusDetail
 } from '../api/simulation'
 import { generateReport } from '../api/report'
+
+const { t } = useI18n()
 
 const props = defineProps({
   simulationId: String,
@@ -314,22 +317,22 @@ const router = useRouter()
 
 // State
 const isGeneratingReport = ref(false)
-const phase = ref(0) // 0: Not started, 1: Running, 2: Completed
+const phase = ref(0) // 0: not started, 1: running, 2: completed
 const isStarting = ref(false)
 const isStopping = ref(false)
 const startError = ref(null)
 const runStatus = ref({})
-const allActions = ref([]) // All actions (incremental accumulation)
-const actionIds = ref(new Set()) // Action ID set for deduplication
+const allActions = ref([]) // All actions (accumulated incrementally)
+const actionIds = ref(new Set()) // Set of action IDs used for dedup
 const scrollContainer = ref(null)
 
 // Computed
-// Display actions in chronological order (newest at bottom)
+// Display actions in chronological order (newest last, i.e. at the bottom)
 const chronologicalActions = computed(() => {
   return allActions.value
 })
 
-// Per-platform action counts
+// Action counts per platform
 const twitterActionsCount = computed(() => {
   return allActions.value.filter(a => a.platform === 'twitter').length
 })
@@ -338,7 +341,7 @@ const redditActionsCount = computed(() => {
   return allActions.value.filter(a => a.platform === 'reddit').length
 })
 
-// Format simulated elapsed time (calculated from rounds and minutes per round)
+// Format simulated elapsed time (calculated from round number and minutes per round)
 const formatElapsedTime = (currentRound) => {
   if (!currentRound || currentRound <= 0) return '0h 0m'
   const totalMinutes = currentRound * props.minutesPerRound
@@ -347,12 +350,12 @@ const formatElapsedTime = (currentRound) => {
   return `${hours}h ${minutes}m`
 }
 
-// Twitter platform simulated elapsed time
+// Simulated elapsed time on Twitter platform
 const twitterElapsedTime = computed(() => {
   return formatElapsedTime(runStatus.value.twitter_current_round || 0)
 })
 
-// Reddit platform simulated elapsed time
+// Simulated elapsed time on Reddit platform
 const redditElapsedTime = computed(() => {
   return formatElapsedTime(runStatus.value.reddit_current_round || 0)
 })
@@ -362,7 +365,7 @@ const addLog = (msg) => {
   emit('add-log', msg)
 }
 
-// Reset all state (for simulation restart)
+// Reset all state (used when restarting the simulation)
 const resetAllState = () => {
   phase.value = 0
   runStatus.value = {}
@@ -373,22 +376,22 @@ const resetAllState = () => {
   startError.value = null
   isStarting.value = false
   isStopping.value = false
-  stopPolling()  // Stop any existing polling
+  stopPolling()  // Stop any previously running polling
 }
 
 // Start simulation
 const doStartSimulation = async () => {
   if (!props.simulationId) {
-    addLog('Error: missing simulationId')
+    addLog(t('log.errorMissingSimId'))
     return
   }
-  
-  // Reset all state first to avoid interference from previous simulation
+
+  // Reset all state first to ensure no carry-over from the previous simulation
   resetAllState()
   
   isStarting.value = true
   startError.value = null
-  addLog('Starting dual-platform parallel simulation...')
+  addLog(t('log.startingDualSim'))
   emit('update-status', 'processing')
   
   try {
@@ -396,23 +399,23 @@ const doStartSimulation = async () => {
       simulation_id: props.simulationId,
       platform: 'parallel',
       force: true,  // Force restart
-      enable_graph_memory_update: true  // Enable dynamic graph update
+      enable_graph_memory_update: true  // Enable dynamic graph memory updates
     }
     
     if (props.maxRounds) {
       params.max_rounds = props.maxRounds
-      addLog(`Max simulation rounds set: ${props.maxRounds}`)
+      addLog(t('log.setMaxRounds', { rounds: props.maxRounds }))
     }
     
-    addLog('Dynamic graph update mode enabled')
+    addLog(t('log.graphMemoryUpdateEnabled'))
     
     const res = await startSimulation(params)
     
     if (res.success && res.data) {
       if (res.data.force_restarted) {
-        addLog('✓ Old simulation logs cleared, restarting simulation')
+        addLog(t('log.oldSimCleared'))
       }
-      addLog('✓ Simulation engine started successfully')
+      addLog(t('log.engineStarted'))
       addLog(`  ├─ PID: ${res.data.process_pid || '-'}`)
       
       phase.value = 1
@@ -421,13 +424,13 @@ const doStartSimulation = async () => {
       startStatusPolling()
       startDetailPolling()
     } else {
-      startError.value = res.error || 'Startup failed'
-      addLog(`✗ Startup failed: ${res.error || 'Unknown error'}`)
+      startError.value = res.error || 'Failed to start'
+      addLog(t('log.startFailed', { error: res.error || t('common.unknownError') }))
       emit('update-status', 'error')
     }
   } catch (err) {
     startError.value = err.message
-    addLog(`✗ Startup error: ${err.message}`)
+    addLog(t('log.startException', { error: err.message }))
     emit('update-status', 'error')
   } finally {
     isStarting.value = false
@@ -439,21 +442,21 @@ const handleStopSimulation = async () => {
   if (!props.simulationId) return
   
   isStopping.value = true
-  addLog('Stopping simulation...')
+  addLog(t('log.stoppingSim'))
   
   try {
     const res = await stopSimulation({ simulation_id: props.simulationId })
     
     if (res.success) {
-      addLog('✓ Simulation stopped')
+      addLog(t('log.simStoppedSuccess'))
       phase.value = 2
       stopPolling()
       emit('update-status', 'completed')
     } else {
-      addLog(`Stop failed: ${res.error || 'Unknown error'}`)
+      addLog(t('log.stopFailed', { error: res.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Stop error: ${err.message}`)
+    addLog(t('log.stopException', { error: err.message }))
   } finally {
     isStopping.value = false
   }
@@ -482,7 +485,7 @@ const stopPolling = () => {
   }
 }
 
-// Track each platform's previous round for change detection and logging
+// Track the previous round number for each platform to detect changes and log them
 const prevTwitterRound = ref(0)
 const prevRedditRound = ref(0)
 
@@ -497,7 +500,7 @@ const fetchRunStatus = async () => {
       
       runStatus.value = data
       
-      // Detect round changes per platform and log them
+      // Detect round-number changes per platform and log them
       if (data.twitter_current_round > prevTwitterRound.value) {
         addLog(`[Plaza] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
         prevTwitterRound.value = data.twitter_current_round
@@ -508,46 +511,46 @@ const fetchRunStatus = async () => {
         prevRedditRound.value = data.reddit_current_round
       }
       
-      // Check if simulation completed (via runner_status or platform completion status)
+      // Detect whether the simulation has completed (via runner_status or platform completion states)
       const isCompleted = data.runner_status === 'completed' || data.runner_status === 'stopped'
-      
-      // Extra check: platforms may report completion before backend updates runner_status
-      // Check via twitter_completed and reddit_completed status
+
+      // Extra check: if the backend has not yet updated runner_status but the platforms already report completion,
+      // infer via twitter_completed and reddit_completed flags
       const platformsCompleted = checkPlatformsCompleted(data)
       
       if (isCompleted || platformsCompleted) {
         if (platformsCompleted && !isCompleted) {
-          addLog('✓ All platform simulations have ended')
+          addLog(t('log.allPlatformsCompleted'))
         }
-        addLog('✓ Simulation completed')
+        addLog(t('log.simCompleted'))
         phase.value = 2
         stopPolling()
         emit('update-status', 'completed')
       }
     }
   } catch (err) {
-    console.warn('Failed to get run status:', err)
+    console.warn('Failed to fetch run status:', err)
   }
 }
 
-// Check if all enabled platforms have completed
+// Check whether all enabled platforms have completed
 const checkPlatformsCompleted = (data) => {
-  // If no platform data, return false
+  // If there is no platform data at all, return false
   if (!data) return false
-  
-  // Check each platform's completion status
+
+  // Check completion state of each platform
   const twitterCompleted = data.twitter_completed === true
   const redditCompleted = data.reddit_completed === true
-  
-  // If at least one platform completed, check if all enabled platforms completed
-  // Determine if platform is enabled via actions_count (count > 0 or was running)
+
+  // If at least one platform has completed, check whether all enabled platforms are completed
+  // Determine whether a platform is enabled via actions_count (count > 0, or running was ever true)
   const twitterEnabled = (data.twitter_actions_count > 0) || data.twitter_running || twitterCompleted
   const redditEnabled = (data.reddit_actions_count > 0) || data.reddit_running || redditCompleted
-  
+
   // If no platform is enabled, return false
   if (!twitterEnabled && !redditEnabled) return false
-  
-  // Check if all enabled platforms have completed
+
+  // Check whether all enabled platforms have completed
   if (twitterEnabled && !twitterCompleted) return false
   if (redditEnabled && !redditCompleted) return false
   
@@ -561,10 +564,10 @@ const fetchRunStatusDetail = async () => {
     const res = await getRunStatusDetail(props.simulationId)
     
     if (res.success && res.data) {
-      // Use all_actions to get the complete action list
+      // Use all_actions to get the full action list
       const serverActions = res.data.all_actions || []
-      
-      // Incrementally add new actions (deduplicated)
+
+      // Add new actions incrementally (dedup)
       let newActionsAdded = 0
       serverActions.forEach(action => {
         // Generate unique ID
@@ -580,11 +583,11 @@ const fetchRunStatusDetail = async () => {
         }
       })
       
-      // Do not auto-scroll, let users freely browse timeline
+      // Do not auto-scroll; let the user freely explore the timeline
       // New actions are appended at the bottom
     }
   } catch (err) {
-    console.warn('Failed to get detailed status:', err)
+    console.warn('Failed to fetch status detail:', err)
   }
 }
 
@@ -640,17 +643,17 @@ const formatActionTime = (timestamp) => {
 
 const handleNextStep = async () => {
   if (!props.simulationId) {
-    addLog('Error: missing simulationId')
+    addLog(t('log.errorMissingSimId'))
     return
   }
-  
+
   if (isGeneratingReport.value) {
-    addLog('Report generation request sent, please wait...')
+    addLog(t('log.reportRequestSent'))
     return
   }
   
   isGeneratingReport.value = true
-  addLog('Starting report generation...')
+  addLog(t('log.startingReportGen'))
   
   try {
     const res = await generateReport({
@@ -660,16 +663,16 @@ const handleNextStep = async () => {
     
     if (res.success && res.data) {
       const reportId = res.data.report_id
-      addLog(`✓ Report generation started: ${reportId}`)
+      addLog(t('log.reportGenTaskStarted', { reportId }))
       
-      // Navigate to report page
+      // Navigate to the report page
       router.push({ name: 'Report', params: { reportId } })
     } else {
-      addLog(`✗ Failed to start report generation: ${res.error || 'Unknown error'}`)
+      addLog(t('log.reportGenFailed', { error: res.error || t('common.unknownError') }))
       isGeneratingReport.value = false
     }
   } catch (err) {
-    addLog(`✗ Report generation error: ${err.message}`)
+    addLog(t('log.reportGenException', { error: err.message }))
     isGeneratingReport.value = false
   }
 }
@@ -685,7 +688,7 @@ watch(() => props.systemLogs?.length, () => {
 })
 
 onMounted(() => {
-  addLog('Step3 simulation run initialized')
+  addLog(t('log.step3Init'))
   if (props.simulationId) {
     doStartSimulation()
   }

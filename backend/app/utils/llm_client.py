@@ -1,6 +1,6 @@
 """
-LLM Client Wrapper
-Unified OpenAI-format API calls
+LLM client wrapper
+Uses OpenAI-compatible format for calls
 """
 
 import json
@@ -13,7 +13,7 @@ from ..config import Config
 
 class LLMClient:
     """LLM client"""
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -23,15 +23,15 @@ class LLMClient:
         self.api_key = api_key or Config.LLM_API_KEY
         self.base_url = base_url or Config.LLM_BASE_URL
         self.model = model or Config.LLM_MODEL_NAME
-        
+
         if not self.api_key:
             raise ValueError("LLM_API_KEY is not configured")
-        
+
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
         )
-    
+
     def chat(
         self,
         messages: List[Dict[str, str]],
@@ -40,14 +40,14 @@ class LLMClient:
         response_format: Optional[Dict] = None
     ) -> str:
         """
-        Send chat request
-        
+        Send a chat request
+
         Args:
-            messages: Message list
+            messages: List of messages
             temperature: Temperature parameter
-            max_tokens: Maximum token count
-            response_format: Response format (e.g., JSON mode)
-            
+            max_tokens: Max number of tokens
+            response_format: Response format (e.g. JSON mode)
+
         Returns:
             Model response text
         """
@@ -57,16 +57,16 @@ class LLMClient:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-        
+
         if response_format:
             kwargs["response_format"] = response_format
-        
+
         response = self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
-        # Some models (e.g., MiniMax M2.5) include <think> reasoning content that needs to be removed
+        # Some models (e.g. MiniMax M2.5) include <think>reasoning</think> in the content; strip it
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
-    
+
     def chat_json(
         self,
         messages: List[Dict[str, str]],
@@ -74,13 +74,13 @@ class LLMClient:
         max_tokens: int = 4096
     ) -> Dict[str, Any]:
         """
-        Send chat request and return JSON
-        
+        Send a chat request and return JSON
+
         Args:
-            messages: Message list
+            messages: List of messages
             temperature: Temperature parameter
-            max_tokens: Maximum token count
-            
+            max_tokens: Max number of tokens
+
         Returns:
             Parsed JSON object
         """
@@ -90,7 +90,7 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"}
         )
-        # Clean up markdown code block markers
+        # Strip markdown code fence markers
         cleaned_response = response.strip()
         cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
         cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
@@ -99,5 +99,4 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"Invalid JSON format returned by LLM: {cleaned_response}")
-
+            raise ValueError(f"LLM returned invalid JSON: {cleaned_response}")

@@ -1,5 +1,5 @@
 """
-Data Models Module
+Data models module
 """
 
 from .task import TaskManager, TaskStatus

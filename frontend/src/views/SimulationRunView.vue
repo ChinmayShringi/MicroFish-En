@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
           <span class="step-num">Step 3/5</span>
-          <span class="step-name">Run Simulation</span>
+          <span class="step-name">{{ $tm('main.stepNames')[2] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -47,7 +49,7 @@
         />
       </div>
 
-      <!-- Right Panel: Step3 Run Simulation -->
+      <!-- Right Panel: Step3 Start Simulation -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <Step3Simulation
           :simulationId="currentSimulationId"
@@ -73,7 +75,10 @@ import GraphPanel from '../components/GraphPanel.vue'
 import Step3Simulation from '../components/Step3Simulation.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation, getSimulationConfig, stopSimulation, closeSimulationEnv, getEnvStatus } from '../api/simulation'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -87,9 +92,9 @@ const viewMode = ref('split')
 
 // Data State
 const currentSimulationId = ref(route.params.simulationId)
-// Get maxRounds from query params at init to ensure child components receive the value immediately
+// Read maxRounds from the query string at init time so child components can get it immediately
 const maxRounds = ref(route.query.maxRounds ? parseInt(route.query.maxRounds) : null)
-const minutesPerRound = ref(30) // Default 30 minutes per round
+const minutesPerRound = ref(30) // Defaults to 30 minutes per round
 const projectData = ref(null)
 const graphData = ref(null)
 const graphLoading = ref(false)
@@ -145,104 +150,104 @@ const toggleMaximize = (target) => {
 }
 
 const handleGoBack = async () => {
-  // Close running simulation before returning to Step 2
-  addLog('Preparing to return to Step 2, closing simulation...')
+  // Close any running simulation before returning to Step 2
+  addLog(t('log.preparingGoBack'))
   
   // Stop polling
   stopGraphRefresh()
   
   try {
-    // Try graceful shutdown of simulation environment first
+    // First attempt to gracefully close the simulation environment
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
     
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
-      addLog('Closing simulation environment...')
+      addLog(t('log.closingSimEnv'))
       try {
         await closeSimulationEnv({ 
           simulation_id: currentSimulationId.value,
           timeout: 10
         })
-        addLog('✓ Simulation environment closed')
+        addLog(t('log.simEnvClosed'))
       } catch (closeErr) {
-        addLog(`Failed to close simulation environment, attempting force stop...`)
+        addLog(t('log.closeSimEnvFailed'))
         try {
           await stopSimulation({ simulation_id: currentSimulationId.value })
-          addLog('✓ Simulation force stopped')
+          addLog(t('log.simForceStopSuccess'))
         } catch (stopErr) {
-          addLog(`Force stop failed: ${stopErr.message}`)
+          addLog(t('log.forceStopFailed', { error: stopErr.message }))
         }
       }
     } else {
-      // Environment not running, check if process needs stopping
+      // Environment not running; check whether the process still needs stopping
       if (isSimulating.value) {
-        addLog('Stopping simulation process...')
+        addLog(t('log.stoppingSimProcess'))
         try {
           await stopSimulation({ simulation_id: currentSimulationId.value })
-          addLog('✓ Simulation stopped')
+          addLog(t('log.simStopped'))
         } catch (err) {
-          addLog(`Failed to stop simulation: ${err.message}`)
+          addLog(t('log.stopSimFailed', { error: err.message }))
         }
       }
     }
   } catch (err) {
-    addLog(`Failed to check simulation status: ${err.message}`)
+    addLog(t('log.checkStatusFailed', { error: err.message }))
   }
   
-  // Return to Step 2 (Environment Setup)
+  // Return to Step 2 (environment setup)
   router.push({ name: 'Simulation', params: { simulationId: currentSimulationId.value } })
 }
 
 const handleNextStep = () => {
-  // Step3Simulation component handles report generation and routing directly
-  // This method is a fallback only
-  addLog('Entering Step 4: Report Generation')
+  // The Step3Simulation component handles report generation and routing directly.
+  // This method exists only as a fallback.
+  addLog(t('log.enterStep4'))
 }
 
 // --- Data Logic ---
 const loadSimulationData = async () => {
   try {
-    addLog(`Loading simulation data: ${currentSimulationId.value}`)
+    addLog(t('log.loadingSimData', { id: currentSimulationId.value }))
     
-    // Get simulation info
+    // Fetch simulation info
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
       
-      // Get simulation config to obtain minutes_per_round
+      // Fetch simulation config to get minutes_per_round
       try {
         const configRes = await getSimulationConfig(currentSimulationId.value)
         if (configRes.success && configRes.data?.time_config?.minutes_per_round) {
           minutesPerRound.value = configRes.data.time_config.minutes_per_round
-          addLog(`Time config: ${minutesPerRound.value} minutes per round`)
+          addLog(t('log.timeConfig', { minutes: minutesPerRound.value }))
         }
       } catch (configErr) {
-        addLog(`Failed to get time config, using default: ${minutesPerRound.value} min/round`)
+        addLog(t('log.timeConfigFetchFailed', { minutes: minutesPerRound.value }))
       }
       
-      // Get project info
+      // Fetch project info
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
-          addLog(`Project loaded: ${projRes.data.project_id}`)
+          addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
           
-          // Get graph data
+          // Fetch graph data
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
           }
         }
       }
     } else {
-      addLog(`Failed to load simulation data: ${simRes.error || 'Unknown error'}`)
+      addLog(t('log.loadSimDataFailed', { error: simRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`Loading error: ${err.message}`)
+    addLog(t('log.loadException', { error: err.message }))
   }
 }
 
 const loadGraph = async (graphId) => {
-  // During simulation, auto-refresh does not show fullscreen loading to avoid flickering
-  // Show loading for manual refresh or initial load
+  // While simulating, auto-refresh avoids a full-screen loading indicator to prevent flicker.
+  // Show the loading indicator for manual refresh or initial load.
   if (!isSimulating.value) {
     graphLoading.value = true
   }
@@ -252,11 +257,11 @@ const loadGraph = async (graphId) => {
     if (res.success) {
       graphData.value = res.data
       if (!isSimulating.value) {
-        addLog('Graph data loaded successfully')
+        addLog(t('log.graphDataLoadSuccess'))
       }
     }
   } catch (err) {
-    addLog(`Graph loading failed: ${err.message}`)
+    addLog(t('log.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -273,7 +278,7 @@ let graphRefreshTimer = null
 
 const startGraphRefresh = () => {
   if (graphRefreshTimer) return
-  addLog('Started graph auto-refresh (30s)')
+  addLog(t('log.graphRealtimeRefreshStart'))
   // Refresh immediately, then every 30 seconds
   graphRefreshTimer = setInterval(refreshGraph, 30000)
 }
@@ -282,7 +287,7 @@ const stopGraphRefresh = () => {
   if (graphRefreshTimer) {
     clearInterval(graphRefreshTimer)
     graphRefreshTimer = null
-    addLog('Stopped graph auto-refresh')
+    addLog(t('log.graphRealtimeRefreshStop'))
   }
 }
 
@@ -295,11 +300,11 @@ watch(isSimulating, (newValue) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('SimulationRunView initialized')
+  addLog(t('log.simRunViewInit'))
   
-  // Log maxRounds config (value obtained from query params at init)
+  // Log the maxRounds config (value already picked up from query at init)
   if (maxRounds.value) {
-    addLog(`Custom simulation rounds: ${maxRounds.value}`)
+    addLog(t('log.customRounds', { rounds: maxRounds.value }))
   }
   
   loadSimulationData()
